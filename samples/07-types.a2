@@ -1,0 +1,42 @@
+; There are two fundamental types:
+; - byte, which is 8-bits wide; and
+; - addr, which is 16-bits wide.
+
+let bool = :byte
+
+let (
+    pred   = :sub -> [truth: bool],
+    checks = :predicate^3,
+)
+
+let Point2D = [x: int, y: int]
+
+let pt2d = :Point2D
+
+use [
+    isTrue : pred,
+    isFalse: pred,
+    isIt   : pred,
+]
+
+let (
+    isTrue = sub -> [truth: bool] {
+        truth := 1
+        ->
+    },
+    isFalse = sub -> [truth: bool] {
+        truth := 0
+        ->
+    },
+    isIt = sub -> [truth: bool] {
+        truth := 2
+        ->
+    },
+)
+
+use myChecks: checks
+let myChecks = (isTrue, isFalase, isIt)
+
+var yes: bool
+yes := myChecks_0()
+

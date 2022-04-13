@@ -1,0 +1,17 @@
+COUT	EQU $FDED
+PTR1	EQU $EE
+Output3.text	EQU PTR1
+Output3	LDY #$00
+	LDA (Output3.text),Y
+	JSR COUT
+	LDY #$01
+	LDA (Output3.text),Y
+	JSR COUT
+	LDA Characters+2
+	JSR COUT
+	LDA #$03
+	STA Output3.len
+	RTS
+Output3._end	RTS
+Characters	HEX 00000000
+Output3.len	HEX 00

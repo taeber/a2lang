@@ -1,0 +1,41 @@
+var foo: int
+use CH: byte @ $24
+var CH2: byte @ -17
+use CH3:        byte @ %10
+var CH4: byte @ %10
+
+let bool = :byte
+
+var PTR1: addr @ $06
+use PTR2: addr @ $FE
+
+var []
+var [one: byte ]
+
+use [
+    first : byte,
+    sec   : char,
+    third: addr,
+]
+
+var [
+    x: char
+]
+
+use Copy: sub
+    <- [dst: text @ PTR1, src: text @ PTR2]
+    -> [success: bool]
+
+use SafeCopy: sub <- [
+    dst   :text @ PTR1,
+    src   :text @ PTR2,
+    limit :byte,
+] -> [
+    success: bool
+]
+
+let Point3D = [x: int, y: int, z: int]
+let cNumPoints = 2
+var points: Point3D^42
+var points2: Point3D^cNumPoints
+

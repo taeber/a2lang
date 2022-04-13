@@ -1,0 +1,32 @@
+let (
+    bool = :byte,
+    FALSE = 0,
+    TRUE  = 1,
+)
+
+
+let Check = sub <- [val: int] -> [is: bool] {
+    is := FALSE
+    if val == 0 {
+        is := TRUE
+        ->
+    }
+    if val <> 0 {
+        ->
+    }
+    if val <= 0 {
+        if val < 0 {
+            ->
+        }
+        is := TRUE
+        ->
+    }
+    if val <= 0 {
+        if val < 0 {
+            ->
+        }
+        is := TRUE
+        ->
+    }
+}
+

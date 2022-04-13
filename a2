@@ -1,0 +1,141 @@
+#!/bin/bash
+
+set -e  # Exit on error
+
+AOUT=$PWD/OUT.6502
+
+function bash
+{
+    echo alias a2=$(realpath $0) \;
+    type _a2_completions | tail +2
+    echo \;
+    echo complete -D -F _a2_completions -o bashdefault -o default a2 \;
+}
+
+# https://www.gnu.org/software/bash/manual/html_node/Programmable-Completion-Builtins.html#Programmable-Completion-Builtins
+function _a2_completions
+{
+    if [ "${#COMP_WORDS[@]}" == "2" ]
+    then
+        COMPREPLY=($(compgen -W "bash build clean help run" "${COMP_WORDS[-1]}"))
+    elif [ "${COMP_WORDS[-1]}" == "-" ]
+    then
+        COMPREPLY=($(compgen -W "-o" "${COMP_WORDS[-1]}"))
+    fi
+}
+
+function build
+{
+    case $1 in
+        -o) shift
+            AOUT=$1
+            shift
+            ;;
+    esac
+
+    make
+    ./compile $* | expand -t12
+    deps
+    deps/a2asm <(./compile $*) >$AOUT
+    echo "Apple DOS 3.3 binary written to:"
+    echo "    $AOUT"
+}
+
+function clean
+{
+    rm -rf ./deps ./build
+    make clean
+}
+
+function deps
+{
+    if [ ! -d deps/a2asm.git ]
+    then
+        mkdir -p deps/a2asm.git
+        git clone https://github.com/taeber/a2asm deps/a2asm.git
+        pushd deps/a2asm.git
+        go build -o ../a2asm cmd/a2asm/main.go
+        popd
+    fi
+
+    if [ ! -f deps/MASTER.DSK ]
+    then
+        curl -L 'https://github.com/AppleWin/AppleWin/raw/master/bin/MASTER.DSK' >deps/MASTER.DSK
+    fi
+
+    if [ ! -f deps/ac.jar ]
+    then
+        curl -L 'https://github.com/AppleCommander/AppleCommander/releases/download/v1-5-0/AppleCommander-ac-1.5.0.jar' >deps/ac.jar
+    fi
+}
+
+function openurl
+{
+    open $1 || xdg-open $1
+}
+
+function run
+{
+    DISK=$PWD/build/DISK.DSK
+
+    if [ "$1" != "" ]
+    then
+        AOUT="$1"
+    fi
+
+    echo "Building disk for 6502 binary:"
+    echo "    $AOUT"
+
+    mkdir -p build
+    cp deps/MASTER.DSK "$DISK"
+    java -jar deps/ac.jar -dos "$DISK" PROG B <$AOUT
+
+    echo ""
+    echo "Your build disk is at:"
+    echo "    $DISK"
+    echo ""
+
+    echo "Launching emulator"
+    if [ ! -f /Applications/Ample.app/Contents/MacOS/mame64 ]
+    then
+        openurl 'https://www.scullinsteel.com/apple2/e'
+        return
+    fi
+
+    echo ""
+    echo "  ]BRUN PROG"
+    echo ""
+
+    pushd ~/Library/Application\ Support/Ample >/dev/null
+    /Applications/Ample.app/Contents/MacOS/mame64 \
+        apple2e -skip_gameinfo -nosamples -window -nomax -flop1 "$DISK"
+    popd >/dev/null
+}
+
+case "$1" in
+bash|build|clean|run)
+    $*
+    ;;
+
+help|*)
+    echo "A2 is a tool for managing A2 source code."
+    echo ""
+    echo "Usage:"
+    echo ""
+    echo "    a2 <command> [arguments]"
+    echo ""
+    echo "The commands are:"
+    echo ""
+    echo "    bash   adds bash tab completion for a2"
+    echo "    build  compile and assemble A2 into 6502 binary"
+    echo "    clean  delete build files and dependencies"
+    echo "    help   view this help message"
+    echo "    run    run a 6502 binary in an emulator"
+    echo ""
+    echo "For Bash, you can add an a2 alias with tab completion with:"
+    echo ""
+    echo "    eval \$(./a2 bash)"
+    echo ""
+    ;;
+esac
+

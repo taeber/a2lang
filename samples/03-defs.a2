@@ -1,0 +1,58 @@
+use COUT: sub @ $FDED
+
+var [
+    CH: byte @ $24,
+    CV: byte @ $25,
+]
+
+use HelloWorld: text
+
+asm {
+HelloWorld  ASC "Hello, world!"
+            HEX 00
+}
+
+var PTR1: addr @ $06
+
+use Output: sub <- [text: text @ PTR1] -> [len: int]
+
+use ANSWER: byte
+let ANSWER = 42
+
+let (
+    NUL = $00,
+    NL  = $0A,
+    LF  = NL,
+    CR  = $0D,
+    HT  = $09,
+    TAB = HT,
+    DEL = $7F,
+)
+
+let ()
+
+let LOWERA = `a
+let strings = "We call them text literals"
+
+let PrintChar = sub {
+    var ch: byte @ A
+}
+
+let (
+    Printa = sub { let ch = `a },
+    PrintB = sub { let ch = `B },
+    Printc = sub {
+        var c: char
+    },
+)
+
+let bool = :byte
+let Point2D = [X:int, Y:int]
+
+let Group = [
+    Field: int,
+    field2: bool,
+    pt: Point2D
+]
+
+var g: Group

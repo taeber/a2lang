@@ -1,0 +1,15 @@
+use COUT: sub <- [ch: byte @A] @ $FDED
+
+let Character = [ ch: char ]
+var Characters: Character^4
+
+var PTR1: addr @ $EE
+
+let Output3 = sub <- [text: text @PTR1] -> [len: int] {
+    COUT(ch=text_0)
+    COUT(ch=text_1)
+    COUT(ch=Characters_2.ch)
+    len := 3
+    ->
+}
+

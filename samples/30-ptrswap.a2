@@ -1,0 +1,39 @@
+asm {*
+	ORG $800
+	JSR main
+	JMP EXIT
+}
+
+; https://www.6502disassembly.com/a2-rom/APPLE2.ROM.html
+use [
+    EXIT: sub @ $3D0,
+    INIT: sub @ $FB2F,  ; AKA TEXT
+    HOME: sub @ $FC58,
+
+    COUT : sub <- [ch: char @ A] @ $FDED,
+    CROUT: sub @ $FD8E,
+]
+
+var DST: addr @ $06
+var SRC: addr @ $08
+
+let swap1 = sub <- [dst: text @ DST, src: text @ SRC] {
+    DST := SRC
+}
+
+let main = sub {
+	INIT()
+	HOME()
+
+    swap1("HELLO", "WORLD")
+
+    DST := SRC
+
+    var world: text @ DST
+    COUT(world_0)
+    COUT(world_1)
+    COUT(world_2)
+    COUT(world_3)
+    COUT(world_4)
+    CROUT()
+}

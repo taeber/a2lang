@@ -1,0 +1,50 @@
+asm {*
+	ORG $800
+DOS	EQU $3D0
+	JSR main
+	JMP DOS
+}
+
+use [
+    INIT: sub @ $FB2F,  ; AKA TEXT
+    HOME: sub @ $FC58,
+
+    COUT : sub <- [ch: char @ A] @ $FDED,
+    CROUT: sub @ $FD8E,
+]
+
+let Println = sub <- [txt: text @ $06] {
+    var [
+        i  :int @ Y,
+        ch :char,
+    ]
+
+    i := 0
+    while txt_i <> 0 {
+        COUT(txt_i)
+        i  += 1
+    }
+
+    CROUT()
+}
+
+use PRTLN: sub <- [txt: text @ $06]
+
+let main = sub {
+    INIT()
+    HOME()
+    Println("Hello, 1979!")
+    PRTLN("Hello, 1979!")
+}
+
+
+asm {
+PRTLN	LDY #0
+.loop	LDA (.txt),Y
+	BEQ .done
+	JSR COUT
+	INY
+	JMP .loop
+.done	JSR CROUT
+	RTS
+}

@@ -1,0 +1,17 @@
+; This is how you inline 6502 assembly
+; Oh and comments start with semi-colons!
+
+asm {
+CH      EQU $26
+COUT    EQU $FDED
+* Don't forget about comments!
+main:   LDA #10
+        STA CH    * And these comments, too.
+        JMP $3D0
+
+MSG     ASC "Oh, hai."
+        HEX 8D00
+
+And really, you can put anything in here as it's copied verbatim to the output
+for use by the assembler.
+}   ; Another comment...

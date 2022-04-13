@@ -1,0 +1,15 @@
+use [
+    INIT: sub @ $FB2F,  ; AKA TEXT
+    HOME: sub @ $FC58,
+    COUT: sub <- [ch: char @ A] @ $FDED,
+]
+
+let main = sub {
+    INIT()
+    HOME()
+
+    COUT(`H)
+    COUT(`i)
+    COUT(`.)
+}
+

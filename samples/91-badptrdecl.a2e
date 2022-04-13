@@ -1,0 +1,2 @@
+; fatal: PTR: pointers must be in Zero Page; got 352.
+use PTR: byte^ @ 352

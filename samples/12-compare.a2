@@ -1,0 +1,55 @@
+asm {*
+	ORG $800
+	JSR main
+	JMP EXIT
+}
+
+; https://www.6502disassembly.com/a2-rom/APPLE2.ROM.html
+use [
+    EXIT: sub @ $3D0,
+    INIT: sub @ $FB2F,  ; AKA TEXT
+    HOME: sub @ $FC58,
+
+    COUT : sub <- [ch: char @ A] @ $FDED,
+    CROUT: sub @ $FD8E,
+]
+
+var PTR: addr @ $06
+
+let Println = sub <- [msg: text @ PTR] {
+    var i: int @ Y
+	i := 0
+    while msg_i <> 0 {
+        COUT(msg_i)
+        i += 1
+    }
+    CROUT()
+}
+
+let main = sub {
+	INIT()
+	HOME()
+
+    var i: int
+
+    i := 21
+    if i < 23 {
+        Println("21 < 23")
+    }
+
+	i := 23
+	if i <= 23 {
+        Println("23 <= 23")
+	}
+	if i >= 23 {
+        Println("23 >= 23")
+	}
+
+	i := 42
+	if i > 23 {
+        Println("42 > 23")
+	}
+
+    Println("OK")
+}
+

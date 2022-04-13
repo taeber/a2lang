@@ -1,0 +1,22 @@
+asm {*
+	ORG $800
+	JSR main
+	JMP $3D0
+}
+
+use [
+    INIT: sub @ $FB2F,  ; AKA TEXT
+    HOME: sub @ $FC58,
+    ; COUT: sub <- [ch: char @ A] @ $FDED,
+    CROUT: sub @ $FD8E,
+    PRNTYX: sub <- [val: word @ YX] @ $F940,
+]
+
+let main = sub {
+    INIT()
+    HOME()
+
+    PRNTYX($BEAD)
+    CROUT()
+}
+

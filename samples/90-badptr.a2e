@@ -1,0 +1,2 @@
+; error: pointers must be in Zero Page
+var PTR: byte^

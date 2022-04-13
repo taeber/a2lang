@@ -1,0 +1,27 @@
+NUMPEEPS	EQU $0A
+false	EQU $00
+true	EQU $01
+	LDA #$00
+	STA i
+A2_0	LDA i
+	* TODO: handle more condition types
+A2_1	LDA i
+	BNE A2_1._then
+	BCS A2_1._then
+	JMP A2_1._end
+	* TODO: handle STMT_ASSIGN for -=
+A2_1._then	JMP A2_1
+A2_1._end	LDA #false
+	STA done
+	* TODO: handle STMT_ASSIGN for !=
+	LDA #true
+	STA done
+	LDA #$00
+	STA flags
+	* TODO: handle STMT_ASSIGN for |=
+	* TODO: handle STMT_ASSIGN for &=
+	* TODO: handle STMT_ASSIGN for ~=
+i	HEX 00
+done	HEX 00
+working	HEX 00
+flags	HEX 00

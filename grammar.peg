@@ -1,0 +1,107 @@
+Program     <- _ Statements EndOfInput
+
+Block       <- '{' _ Statements? '}' _
+Statements  <- Statement+
+Statement   <- Declaration
+             / Variable
+             / Definition
+             / Call
+             / Assignment
+             / Conditional
+             / Loop
+             / Return
+             / Stop
+             / Repeat
+             / Assembly
+
+Declaration <- "use" &Space _ Parameters
+
+Variable    <- "var" &Space _ Parameters
+
+Parameters  <- '[' _ ']' _
+             / '[' _ Parameter (Separator Parameter)* Separator? ']' _
+             / Parameter
+Parameter   <- Identifier Type Location?
+Separator   <- ',' _
+
+Definition  <- "let" &Space _ Arguments
+
+Arguments   <- '(' _ ')' _
+             / '(' _ Argument (Separator Argument)* Separator? ')' _
+             / Argument
+
+Argument    <- Identifier '=' _ Value
+             / Value
+
+Value       <- Number
+             / TextLiteral
+             / CharLiteral
+             / Subroutine Block
+             / Call
+             / IdentPhrase
+             / Tuple
+             / Group
+             / Type
+
+Identifier  <- [a-zA-Z] [a-zA-Z0-9]* _
+IdentPhrase <- Identifier Subscript? FieldAccess?
+
+Type        <- ':' _ (Subroutine / Pointer / Array / Identifier)
+
+Pointer     <- Identifier '^' !Numerical _
+
+Array       <- Identifier '^' Numerical
+Tuple       <- &'(' Arguments
+Group       <- &'[' Parameters
+
+Numerical   <- Number / Identifier
+
+Subroutine  <- "sub" _ ("<-" _ Parameters)? ("->" _ Parameters)? _
+
+Call        <- IdentPhrase &'(' Arguments
+
+Location    <- '@' _ Numerical
+
+Number      <- Hexadecimal
+             / Decimal
+             / Binary
+
+Hexadecimal <- '$' [0-9a-fA-F]+ _
+Decimal     <- '-'? [0-9]+ _
+Binary      <- '%' [01]+ _
+
+TextLiteral <- '"' Character* '"' _
+Character   <- '\\' [\"\\nrt]
+             / (!["\\] [ -~])
+CharLiteral <- '`' [!-~] _
+
+Subscript   <- '_' _ Numerical
+FieldAccess <- '.' _ Identifier
+
+Assignment  <- IdentPhrase Assign Value
+Assign      <- [:+\-&|~!] '=' _
+
+Conditional <- "if" &Space _ Comparison Block
+
+Loop        <- "while" &Space _ Comparison Block
+
+Return      <- "->" _
+Stop        <- "stop"   &Space _
+Repeat      <- "repeat" &Space _
+
+
+Comparison  <- SimpleValue Compare SimpleValue
+Compare     <- "<>"      _
+             / "=="      _
+             / [<>] '='? _
+SimpleValue <- ![:[{(] Value
+
+Assembly    <- "asm" _ '{'  (!'}' .)* '}' _
+
+_           <- ( Space / Comment )*
+HSpace      <- ' ' / '\t'
+Space       <- HSpace / NEWLINE
+NEWLINE     <- '\n'
+Comment     <- ';' (!NEWLINE .)* NEWLINE
+
+EndOfInput  <- !.

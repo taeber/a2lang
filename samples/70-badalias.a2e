@@ -1,0 +1,5 @@
+use COUT: sub @ $FDED
+
+; error: COUT is not a type
+let consoleOut = :COUT
+
