@@ -94,7 +94,7 @@ Comparison  <- SimpleValue Compare SimpleValue
 Compare     <- "<>"      _
              / "=="      _
              / [<>] '='? _
-SimpleValue <- ![:[{(] Value
+SimpleValue <- ![:[{("] Value
 
 Assembly    <- "asm" _ '{'  (!'}' .)* '}' _
 

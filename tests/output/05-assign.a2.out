@@ -1,0 +1,111 @@
+	ORG $800
+	JSR main
+	JMP EXIT
+EXIT	EQU $3D0
+INIT	EQU $FB2F
+HOME	EQU $FC58
+COUT	EQU $FDED
+CROUT	EQU $FD8E
+PRNTYX	EQU $F940
+PRBYTE	EQU $FDDA
+* COPYBB @A Assert.expected
+Assert	LDA Assert.expected
+	JSR PRBYTE
+* IFEQ Assert.actual Assert.expected
+*   Assert._1 Assert._2
+Assert._0	LDA Assert.actual
+	CMP Assert.expected
+	BEQ Assert._1
+	JMP Assert._2
+* COPYBB @A #"="
+Assert._1	LDA #"="
+	JSR COUT
+* COPYBB @A #"="
+	LDA #"="
+	JSR COUT
+* COPYBB @A Assert.actual
+	LDA Assert.actual
+	JSR PRBYTE
+	JSR CROUT
+	RTS
+* COPYBB @A #"<"
+Assert._2	LDA #"<"
+	JSR COUT
+* COPYBB @A #">"
+	LDA #">"
+	JSR COUT
+* COPYBB @A Assert.actual
+	LDA Assert.actual
+	JSR PRBYTE
+	JSR CROUT
+* COPYBB @A #"F"
+	LDA #"F"
+	JSR COUT
+* COPYBB @A #"A"
+	LDA #"A"
+	JSR COUT
+* COPYBB @A #"I"
+	LDA #"I"
+	JSR COUT
+* COPYBB @A #"L"
+	LDA #"L"
+	JSR COUT
+* COPYBB @A #"!"
+	LDA #"!"
+	JSR COUT
+	JSR CROUT
+	JSR EXIT
+Assert._end	RTS
+main._end	RTS
+NUMPEEPS	EQU $0A
+* COPYBB i #$00
+	LDA #$00
+	STA i
+* IFLT i #NUMPEEPS
+*   A2_4 A2_5
+A2_3	LDA i
+	CMP #NUMPEEPS
+	BCC A2_4
+	JMP A2_5
+* ADDBB i #$01
+A2_4	LDA #$01
+	CLC
+	ADC i
+	STA i
+	JMP A2_3
+* IFLT #$00 i
+*   A2_7 A2_8
+A2_6	LDA #$00
+	CMP i
+	BCC A2_7
+	JMP A2_8
+* SUBBB i #NUMPEEPS
+A2_7	LDA #NUMPEEPS
+	SEC
+	SBC i
+	STA i
+	JMP A2_6
+false	EQU $00
+true	EQU $01
+* COPYBB done #false
+	LDA #false
+	STA done
+* TODO: handle STMT_ASSIGN for !=
+* COPYBB done #true
+	LDA #true
+	STA done
+* COPYBB flags #$00
+	LDA #$00
+	STA flags
+* TODO: handle STMT_ASSIGN for |=
+* TODO: handle STMT_ASSIGN for &=
+* TODO: handle STMT_ASSIGN for ~=
+main	EQU main._end
+A2_5	EQU A2_6
+A2_8	EQU false
+Assert.actual	HEX 00
+Assert.expected	HEX 00
+i	HEX 00
+done	HEX 00
+working	HEX 00
+flags	HEX 00

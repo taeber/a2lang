@@ -1,0 +1,145 @@
+	ORG $800
+	JSR main
+	JMP EXIT
+EXIT	EQU $3D0
+INIT	EQU $FB2F
+HOME	EQU $FC58
+COUT	EQU $FDED
+CROUT	EQU $FD8E
+PRBYTE	EQU $FDDA
+* COPYBB @A Assert.expected
+Assert	LDA Assert.expected
+	JSR PRBYTE
+* IFEQ Assert.actual Assert.expected
+*   Assert._1 Assert._2
+Assert._0	LDA Assert.actual
+	CMP Assert.expected
+	BEQ Assert._1
+	JMP Assert._2
+* COPYBB @A #"="
+Assert._1	LDA #"="
+	JSR COUT
+* COPYBB @A #"="
+	LDA #"="
+	JSR COUT
+* COPYBB @A Assert.actual
+	LDA Assert.actual
+	JSR PRBYTE
+	JSR CROUT
+	RTS
+* COPYBB @A #"<"
+Assert._2	LDA #"<"
+	JSR COUT
+* COPYBB @A #">"
+	LDA #">"
+	JSR COUT
+* COPYBB @A Assert.actual
+	LDA Assert.actual
+	JSR PRBYTE
+	JSR CROUT
+* COPYBB @A #"F"
+	LDA #"F"
+	JSR COUT
+* COPYBB @A #"A"
+	LDA #"A"
+	JSR COUT
+* COPYBB @A #"I"
+	LDA #"I"
+	JSR COUT
+* COPYBB @A #"L"
+	LDA #"L"
+	JSR COUT
+* COPYBB @A #"!"
+	LDA #"!"
+	JSR COUT
+	JSR CROUT
+	JSR EXIT
+Assert._end	RTS
+PTR1	EQU $06
+PTR2	EQU $08
+PTR3	EQU $FE
+NUL	EQU $00
+ONE	EQU $01
+TWO	EQU $02
+ptrb	EQU PTR1
+ptrw	EQU PTR2
+ptrg	EQU PTR3
+* COPYBB OutputOne.one #$01
+OutputOne	LDA #$01
+	STA OutputOne.one
+	RTS
+OutputOne._end	RTS
+* COPYBB @A #"A"
+OutputRegA	LDA #"A"
+	RTS
+OutputRegA._end	RTS
+main	JSR OutputRegA
+* COPYBB varb @A
+	TAY
+	STA varb
+	JSR OutputOne
+* COPYBB varb OutputOne.one
+	LDA OutputOne.one
+	STA varb
+* COPYBB @A #$05
+	LDA #$05
+* COPYBB @X #$05
+	LDX #$05
+* COPYBB @Y #$05
+	LDY #$05
+* COPYBB @Y @X
+	TAX
+	TAY
+* COPYBB varb #$90,#$21
+	LDA #$21
+	STA varb
+* WARNING: VALUE TRUNCATED
+* COPYWB @YA (ptrb),$06
+	LDY $06
+	LDA (ptrb),Y
+	LDY #0
+* COPYWW @YA #$90,#$21
+	LDA #$21
+	LDY #$90
+* COPYBB varb #$42
+	LDA #$42
+	STA varb
+* COPYBB varb #$90,#$21
+	LDA #$21
+	STA varb
+* WARNING: VALUE TRUNCATED
+* COPYWB varw #$42
+	LDA #$42
+	LDX #0
+	STA varw
+	STX varw+1
+* COPYWW varw #$90,#$21
+	LDA #$21
+	LDX #$90
+	STA varw
+	STX varw+1
+* COPYBB arrb+$02 varb
+	LDA varb
+	STA arrb+$02
+* COPYBB arrb+$02 varw
+	LDA varw
+	STA arrb+$02
+* WARNING: VALUE TRUNCATED
+* COPYBB arrb,varb #$2A
+	LDA #$2A
+	LDY varb
+	STA arrb,Y
+* COPYBB (ptrb),$06 #$21
+	LDA #$21
+	LDY #$06
+	STA (ptrb),Y
+main._end	RTS
+Assert.actual	HEX 00
+Assert.expected	HEX 00
+varb	HEX 00
+varw	HEX 0000
+dims	HEX 000000
+arrb	HEX 000000000000000000000000
+arrw	HEX 000000000000000000000000
+arrg	HEX 000000000000000000000000
+OutputOne.one	HEX 00

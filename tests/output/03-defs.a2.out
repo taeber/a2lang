@@ -1,0 +1,31 @@
+COUT	EQU $FDED
+CH	EQU $24
+CV	EQU $25
+HelloWorld  ASC "Hello, world!"
+            HEX 00
+PTR1	EQU $06
+Output.text	EQU PTR1
+ANSWER	EQU $2A
+NUL	EQU $00
+NL	EQU $0A
+* TODO: handle VAL_IDENT
+CR	EQU $0D
+HT	EQU $09
+* TODO: handle VAL_IDENT
+DEL	EQU $7F
+LOWERA	EQU "a"
+PrintChar._end	RTS
+Printa.ch	EQU "a"
+Printa._end	RTS
+PrintB.ch	EQU "B"
+PrintB._end	RTS
+Printc._end	RTS
+PrintChar	EQU PrintChar._end
+Printa	EQU Printa.ch
+PrintB	EQU PrintB.ch
+Printc	EQU Printc._end
+Output.len	HEX 00
+strings	ASC "We call them text literals"
+	HEX 00
+Printc.c	HEX 00
+g	HEX 00000000

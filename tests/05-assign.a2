@@ -1,0 +1,74 @@
+asm {
+	ORG $800
+	JSR main
+	JMP EXIT
+}
+
+use [
+    EXIT  : sub @ $3D0
+    INIT  : sub @ $FB2F  ; AKA TEXT
+    HOME  : sub @ $FC58
+    COUT  : sub <- [ch: char @ A] @ $FDED
+    CROUT : sub @ $FD8E
+    PRNTYX: sub <- [val: word @ YX] @ $F940
+    PRBYTE: sub <- [byte: byte @ A] @ $FDDA
+]
+
+let Assert = sub <- [actual: byte, expected: byte] {
+    PRBYTE(expected)
+    if actual == expected {
+        COUT(`=)
+        COUT(`=)
+        PRBYTE(actual)
+        CROUT()
+        ->
+    }
+    COUT(`<)
+    COUT(`>)
+    PRBYTE(actual)
+    CROUT()
+    COUT(`F)
+    COUT(`A)
+    COUT(`I)
+    COUT(`L)
+    COUT(`!)
+    CROUT()
+    EXIT()
+}
+
+let main = sub {
+
+}
+
+let NUMPEEPS = 10
+
+var i: int
+i := 0
+while i < NUMPEEPS {
+    i += 1
+}
+while i > 0 {
+    i -= NUMPEEPS
+}
+
+let (
+bool = :byte,
+false = 0,
+true = 1,
+)
+
+var [
+    done: bool,
+    working: bool,
+]
+done := false
+; In C, this would be  working = !done
+working != done
+done := true
+
+var flags: byte
+flags := %00000000
+flags |= %11111111  ; ORA
+flags &= %10101010  ; AND
+flags ~= %10101010  ; EOR
+

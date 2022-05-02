@@ -1,0 +1,15 @@
+INIT	EQU $FB2F
+HOME	EQU $FC58
+COUT	EQU $FDED
+main	JSR INIT
+	JSR HOME
+* COPYBB @A #"H"
+	LDA #"H"
+	JSR COUT
+* COPYBB @A #"i"
+	LDA #"i"
+	JSR COUT
+* COPYBB @A #"."
+	LDA #"."
+	JSR COUT
+main._end	RTS

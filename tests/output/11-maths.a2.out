@@ -1,0 +1,179 @@
+	ORG $800
+	JSR main
+	JMP EXIT
+EXIT	EQU $3D0
+INIT	EQU $FB2F
+HOME	EQU $FC58
+COUT	EQU $FDED
+CROUT	EQU $FD8E
+PRBYTE	EQU $FDDA
+ANSWER	EQU $2A
+* COPYBB @A Assert.expected
+Assert	LDA Assert.expected
+	JSR PRBYTE
+* IFEQ Assert.actual Assert.expected
+*   Assert._1 Assert._2
+Assert._0	LDA Assert.actual
+	CMP Assert.expected
+	BEQ Assert._1
+	JMP Assert._2
+* COPYBB @A #"="
+Assert._1	LDA #"="
+	JSR COUT
+* COPYBB @A #"="
+	LDA #"="
+	JSR COUT
+* COPYBB @A Assert.actual
+	LDA Assert.actual
+	JSR PRBYTE
+	JSR CROUT
+	RTS
+* COPYBB @A #"<"
+Assert._2	LDA #"<"
+	JSR COUT
+* COPYBB @A #">"
+	LDA #">"
+	JSR COUT
+* COPYBB @A Assert.actual
+	LDA Assert.actual
+	JSR PRBYTE
+	JSR CROUT
+* COPYBB @A #"F"
+	LDA #"F"
+	JSR COUT
+* COPYBB @A #"A"
+	LDA #"A"
+	JSR COUT
+* COPYBB @A #"I"
+	LDA #"I"
+	JSR COUT
+* COPYBB @A #"L"
+	LDA #"L"
+	JSR COUT
+* COPYBB @A #"!"
+	LDA #"!"
+	JSR COUT
+	JSR CROUT
+	JSR EXIT
+Assert._end	RTS
+main	JSR INIT
+	JSR HOME
+* COPYBB main.value #$2A
+	LDA #$2A
+	STA main.value
+* COPYBB Assert.actual main.value
+	LDA main.value
+	STA Assert.actual
+* COPYBB Assert.expected #$2A
+	LDA #$2A
+	STA Assert.expected
+	JSR Assert
+* SUBBB main.value #ANSWER
+	LDA #ANSWER
+	SEC
+	SBC main.value
+	STA main.value
+* COPYBB Assert.actual main.value
+	LDA main.value
+	STA Assert.actual
+* COPYBB Assert.expected #$00
+	LDA #$00
+	STA Assert.expected
+	JSR Assert
+* ADDBB main.value #$17
+	LDA #$17
+	CLC
+	ADC main.value
+	STA main.value
+* COPYBB Assert.actual main.value
+	LDA main.value
+	STA Assert.actual
+* COPYBB Assert.expected #$17
+	LDA #$17
+	STA Assert.expected
+	JSR Assert
+* COPYBB main.value #$00
+	LDA #$00
+	STA main.value
+* SUBBB main.value #$2A
+	LDA #$2A
+	SEC
+	SBC main.value
+	STA main.value
+* COPYBB Assert.actual main.value
+	LDA main.value
+	STA Assert.actual
+* COPYBB Assert.expected #$FF,#$D6
+	LDA #$D6
+	STA Assert.expected
+* WARNING: VALUE TRUNCATED
+	JSR Assert
+* COPYBB main.value #$FF
+	LDA #$FF
+	STA main.value
+* ADDBB main.value #$01
+	LDA #$01
+	CLC
+	ADC main.value
+	STA main.value
+* COPYBB Assert.actual main.value
+	LDA main.value
+	STA Assert.actual
+* COPYBB Assert.expected #$00
+	LDA #$00
+	STA Assert.expected
+	JSR Assert
+* COPYBB main.value #$00
+	LDA #$00
+	STA main.value
+* SUBBB main.value #$01
+	LDA #$01
+	SEC
+	SBC main.value
+	STA main.value
+* COPYBB Assert.actual main.value
+	LDA main.value
+	STA Assert.actual
+* COPYBB Assert.expected #$FF
+	LDA #$FF
+	STA Assert.expected
+	JSR Assert
+* COPYBB main.value #$07
+	LDA #$07
+	STA main.value
+* COPYBB main.other #$04
+	LDA #$04
+	STA main.other
+* SUBBB main.value main.other
+	LDA main.other
+	SEC
+	SBC main.value
+	STA main.value
+* COPYBB Assert.actual main.value
+	LDA main.value
+	STA Assert.actual
+* COPYBB Assert.expected #$03
+	LDA #$03
+	STA Assert.expected
+	JSR Assert
+* COPYBB main.values+$02 #$09
+	LDA #$09
+	STA main.values+$02
+* SUBBB main.values+$02 main.other
+	LDA main.other
+	SEC
+	SBC main.values+$02
+	STA main.values+$02
+* COPYBB Assert.actual main.values+$02
+	LDA main.values+$02
+	STA Assert.actual
+* COPYBB Assert.expected #$05
+	LDA #$05
+	STA Assert.expected
+	JSR Assert
+main._end	RTS
+Assert.actual	HEX 00
+Assert.expected	HEX 00
+main.value	HEX 00
+main.other	HEX 00
+main.values	HEX 00000000

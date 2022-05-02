@@ -1,0 +1,132 @@
+	ORG $800
+	JSR main
+	JMP EXIT
+EXIT	EQU $3D0
+INIT	EQU $FB2F
+HOME	EQU $FC58
+COUT	EQU $FDED
+CROUT	EQU $FD8E
+PRBYTE	EQU $FDDA
+ANSWER	EQU $2A
+* COPYBB @A Assert.expected
+Assert	LDA Assert.expected
+	JSR PRBYTE
+* IFEQ Assert.actual Assert.expected
+*   Assert._1 Assert._2
+Assert._0	LDA Assert.actual
+	CMP Assert.expected
+	BEQ Assert._1
+	JMP Assert._2
+* COPYBB @A #"="
+Assert._1	LDA #"="
+	JSR COUT
+* COPYBB @A #"="
+	LDA #"="
+	JSR COUT
+* COPYBB @A Assert.actual
+	LDA Assert.actual
+	JSR PRBYTE
+	JSR CROUT
+	RTS
+* COPYBB @A #"<"
+Assert._2	LDA #"<"
+	JSR COUT
+* COPYBB @A #">"
+	LDA #">"
+	JSR COUT
+* COPYBB @A Assert.actual
+	LDA Assert.actual
+	JSR PRBYTE
+	JSR CROUT
+* COPYBB @A #"F"
+	LDA #"F"
+	JSR COUT
+* COPYBB @A #"A"
+	LDA #"A"
+	JSR COUT
+* COPYBB @A #"I"
+	LDA #"I"
+	JSR COUT
+* COPYBB @A #"L"
+	LDA #"L"
+	JSR COUT
+* COPYBB @A #"!"
+	LDA #"!"
+	JSR COUT
+	JSR CROUT
+	JSR EXIT
+Assert._end	RTS
+* COPYBB TestSimple.value #$00
+TestSimple	LDA #$00
+	STA TestSimple.value
+* SUBBB TestSimple.value #$2A
+	LDA #$2A
+	SEC
+	SBC TestSimple.value
+	STA TestSimple.value
+* COPYBB Assert.actual TestSimple.value
+	LDA TestSimple.value
+	STA Assert.actual
+* COPYBB Assert.expected #$FF,#$D6
+	LDA #$D6
+	STA Assert.expected
+* WARNING: VALUE TRUNCATED
+	JSR Assert
+* COPYBB TestSimple.value #$2A
+	LDA #$2A
+	STA TestSimple.value
+* SUBBB TestSimple.value #ANSWER
+	LDA #ANSWER
+	SEC
+	SBC TestSimple.value
+	STA TestSimple.value
+* COPYBB Assert.actual TestSimple.value
+	LDA TestSimple.value
+	STA Assert.actual
+* COPYBB Assert.expected #$00
+	LDA #$00
+	STA Assert.expected
+	JSR Assert
+* COPYBB TestSimple.value #$04
+	LDA #$04
+	STA TestSimple.value
+* COPYBB TestSimple.other #$01
+	LDA #$01
+	STA TestSimple.other
+* SUBBB TestSimple.value TestSimple.other
+	LDA TestSimple.other
+	SEC
+	SBC TestSimple.value
+	STA TestSimple.value
+* COPYBB Assert.actual TestSimple.value
+	LDA TestSimple.value
+	STA Assert.actual
+* COPYBB Assert.expected #$03
+	LDA #$03
+	STA Assert.expected
+	JSR Assert
+TestSimple._end	RTS
+* SUBBB TestSimpleRHS.values+$02 #$2A
+TestSimpleRHS	LDA #$2A
+	SEC
+	SBC TestSimpleRHS.values+$02
+	STA TestSimpleRHS.values+$02
+* COPYBB Assert.actual TestSimpleRHS.values+$02
+	LDA TestSimpleRHS.values+$02
+	STA Assert.actual
+* COPYBB Assert.expected #$FF,#$D6
+	LDA #$D6
+	STA Assert.expected
+* WARNING: VALUE TRUNCATED
+	JSR Assert
+TestSimpleRHS._end	RTS
+main	JSR INIT
+	JSR HOME
+	JSR TestSimple
+	JSR TestSimpleRHS
+main._end	RTS
+Assert.actual	HEX 00
+Assert.expected	HEX 00
+TestSimple.value	HEX 00
+TestSimple.other	HEX 00
+TestSimpleRHS.values	HEX 00000000

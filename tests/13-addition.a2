@@ -1,0 +1,118 @@
+; Tests more advanced additions
+; This should be compiled and run in an emulator where it will print "FAIL!" on
+; failures.
+
+asm {
+	ORG $800
+	JSR main
+	JMP EXIT
+}
+
+use [
+    EXIT  : sub @ $3D0
+    INIT  : sub @ $FB2F
+    HOME  : sub @ $FC58
+    COUT  : sub <- [ch: char @ A] @ $FDED
+    CROUT : sub @ $FD8E
+    PRBYTE: sub <- [byte: byte @ A] @ $FDDA
+]
+
+let ANSWER = 42
+
+let Fail = sub {
+    COUT(`F)
+    COUT(`A)
+    COUT(`I)
+    COUT(`L)
+    COUT(`!)
+    CROUT()
+    EXIT()
+}
+
+use PRWORD: sub <- [word: word @ AX]
+asm {
+PRWORD	JSR PRBYTE
+	TXA
+	JMP PRBYTE
+}
+
+let Assert = sub <- [actual: byte, expected: byte] {
+    PRBYTE(expected)
+    if actual == expected {
+        COUT(`=)
+        COUT(`=)
+        PRBYTE(actual)
+        CROUT()
+        ->
+    }
+    COUT(`<)
+    COUT(`>)
+    PRBYTE(actual)
+    CROUT()
+    Fail()
+}
+
+;let AssertW = sub <- [actual: byte^2, expected: byte^2] {
+;    Assert(actual_0, expected_0)
+;    Assert(actual_1, expected_1)
+;}
+
+let AssertW = sub <- [actual: word, expected: word] {
+    PRWORD(expected)
+    if actual == expected {
+        COUT(`=)
+        COUT(`=)
+        PRWORD(actual)
+        CROUT()
+        ->
+    }
+    COUT(`<)
+    COUT(`>)
+    PRWORD(actual)
+    CROUT()
+    Fail()
+}
+
+let TestSimple = sub {
+    var [
+        value: int
+        other: int
+    ]
+
+    value := 0
+    ; adding local, byte with literal byte
+    value += 42
+    Assert(value, 42)
+
+    ; adding local, byte with literal alias
+    value := 0
+    value += ANSWER
+    Assert(value, 42)
+
+    ; adding local, byte with another byte
+    value := 1
+    other := 2
+    value += other
+    Assert(value, 3)
+}
+
+let TestWord = sub {
+    var [
+        large: word
+    ]
+
+    large := 250
+    large += 250
+    AssertW(large, 500)
+    large += large
+    AssertW(large, 1000)
+}
+
+let main = sub {
+    INIT()
+    HOME()
+    TestSimple()
+    TestWord()
+}
+
+; vim: set invlist:

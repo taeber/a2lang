@@ -1,0 +1,206 @@
+	ORG $800
+	JSR main
+	JMP EXIT
+EXIT	EQU $3D0
+INIT	EQU $FB2F
+HOME	EQU $FC58
+COUT	EQU $FDED
+CROUT	EQU $FD8E
+PRBYTE	EQU $FDDA
+ANSWER	EQU $2A
+* COPYBB @A #"F"
+Fail	LDA #"F"
+	JSR COUT
+* COPYBB @A #"A"
+	LDA #"A"
+	JSR COUT
+* COPYBB @A #"I"
+	LDA #"I"
+	JSR COUT
+* COPYBB @A #"L"
+	LDA #"L"
+	JSR COUT
+* COPYBB @A #"!"
+	LDA #"!"
+	JSR COUT
+	JSR CROUT
+	JSR EXIT
+Fail._end	RTS
+PRWORD	JSR PRBYTE
+	TXA
+	JMP PRBYTE
+* COPYBB @A Assert.expected
+Assert	LDA Assert.expected
+	JSR PRBYTE
+* IFEQ Assert.actual Assert.expected
+*   Assert._1 Assert._2
+Assert._0	LDA Assert.actual
+	CMP Assert.expected
+	BEQ Assert._1
+	JMP Assert._2
+* COPYBB @A #"="
+Assert._1	LDA #"="
+	JSR COUT
+* COPYBB @A #"="
+	LDA #"="
+	JSR COUT
+* COPYBB @A Assert.actual
+	LDA Assert.actual
+	JSR PRBYTE
+	JSR CROUT
+	RTS
+* COPYBB @A #"<"
+Assert._2	LDA #"<"
+	JSR COUT
+* COPYBB @A #">"
+	LDA #">"
+	JSR COUT
+* COPYBB @A Assert.actual
+	LDA Assert.actual
+	JSR PRBYTE
+	JSR CROUT
+	JSR Fail
+Assert._end	RTS
+* COPYWW @AX AssertW.expected
+AssertW	LDX AssertW.expected
+	LDA AssertW.expected+1
+	JSR PRWORD
+* IFEQ AssertW.actual AssertW.expected
+*   AssertW._4 AssertW._5
+AssertW._3	LDA AssertW.actual+1
+	CMP AssertW.expected+1
+	BNE AssertW._5
+	LDA AssertW.actual
+	CMP AssertW.expected
+	BEQ AssertW._4
+	JMP AssertW._5
+* COPYBB @A #"="
+AssertW._4	LDA #"="
+	JSR COUT
+* COPYBB @A #"="
+	LDA #"="
+	JSR COUT
+* COPYWW @AX AssertW.actual
+	LDX AssertW.actual
+	LDA AssertW.actual+1
+	JSR PRWORD
+	JSR CROUT
+	RTS
+* COPYBB @A #"<"
+AssertW._5	LDA #"<"
+	JSR COUT
+* COPYBB @A #">"
+	LDA #">"
+	JSR COUT
+* COPYWW @AX AssertW.actual
+	LDX AssertW.actual
+	LDA AssertW.actual+1
+	JSR PRWORD
+	JSR CROUT
+	JSR Fail
+AssertW._end	RTS
+* COPYBB TestSimple.value #$00
+TestSimple	LDA #$00
+	STA TestSimple.value
+* ADDBB TestSimple.value #$2A
+	LDA #$2A
+	CLC
+	ADC TestSimple.value
+	STA TestSimple.value
+* COPYBB Assert.actual TestSimple.value
+	LDA TestSimple.value
+	STA Assert.actual
+* COPYBB Assert.expected #$2A
+	LDA #$2A
+	STA Assert.expected
+	JSR Assert
+* COPYBB TestSimple.value #$00
+	LDA #$00
+	STA TestSimple.value
+* ADDBB TestSimple.value #ANSWER
+	LDA #ANSWER
+	CLC
+	ADC TestSimple.value
+	STA TestSimple.value
+* COPYBB Assert.actual TestSimple.value
+	LDA TestSimple.value
+	STA Assert.actual
+* COPYBB Assert.expected #$2A
+	LDA #$2A
+	STA Assert.expected
+	JSR Assert
+* COPYBB TestSimple.value #$01
+	LDA #$01
+	STA TestSimple.value
+* COPYBB TestSimple.other #$02
+	LDA #$02
+	STA TestSimple.other
+* ADDBB TestSimple.value TestSimple.other
+	LDA TestSimple.other
+	CLC
+	ADC TestSimple.value
+	STA TestSimple.value
+* COPYBB Assert.actual TestSimple.value
+	LDA TestSimple.value
+	STA Assert.actual
+* COPYBB Assert.expected #$03
+	LDA #$03
+	STA Assert.expected
+	JSR Assert
+TestSimple._end	RTS
+* COPYWB TestWord.large #$FA
+TestWord	LDA #$FA
+	LDX #0
+	STA TestWord.large
+	STX TestWord.large+1
+* ADDWB TestWord.large #$FA
+	CLC
+	LDA #$FA
+	ADC TestWord.large
+	STA TestWord.large
+	LDA #0
+	ADC TestWord.large+1
+	STA TestWord.large+1
+* COPYWW AssertW.actual TestWord.large
+	LDA TestWord.large
+	LDX TestWord.large+1
+	STA AssertW.actual
+	STX AssertW.actual+1
+* COPYWW AssertW.expected #$01,#$F4
+	LDA #$F4
+	LDX #$01
+	STA AssertW.expected
+	STX AssertW.expected+1
+	JSR AssertW
+* ADDWW TestWord.large TestWord.large
+	CLC
+	LDA TestWord.large
+	ADC TestWord.large
+	STA TestWord.large
+	LDA TestWord.large+1
+	ADC TestWord.large+1
+	STA TestWord.large+1
+* COPYWW AssertW.actual TestWord.large
+	LDA TestWord.large
+	LDX TestWord.large+1
+	STA AssertW.actual
+	STX AssertW.actual+1
+* COPYWW AssertW.expected #$03,#$E8
+	LDA #$E8
+	LDX #$03
+	STA AssertW.expected
+	STX AssertW.expected+1
+	JSR AssertW
+TestWord._end	RTS
+main	JSR INIT
+	JSR HOME
+	JSR TestSimple
+	JSR TestWord
+main._end	RTS
+Assert.actual	HEX 00
+Assert.expected	HEX 00
+AssertW.actual	HEX 0000
+AssertW.expected	HEX 0000
+TestSimple.value	HEX 00
+TestSimple.other	HEX 00
+TestWord.large	HEX 0000

@@ -1,0 +1,116 @@
+; Exhaustive tests for assignments.
+
+asm {
+	ORG $800
+	JSR main
+	JMP EXIT
+}
+
+use [
+    EXIT  : sub @ $3D0
+    INIT  : sub @ $FB2F
+    HOME  : sub @ $FC58
+    COUT  : sub <- [ch: char @ A] @ $FDED
+    CROUT : sub @ $FD8E
+    PRBYTE: sub <- [byte: byte @ A] @ $FDDA
+]
+
+let Assert = sub <- [actual: byte, expected: byte] {
+    PRBYTE(expected)
+    if actual == expected {
+        COUT(`=)
+        COUT(`=)
+        PRBYTE(actual)
+        CROUT()
+        ->
+    }
+    COUT(`<)
+    COUT(`>)
+    PRBYTE(actual)
+    CROUT()
+    COUT(`F)
+    COUT(`A)
+    COUT(`I)
+    COUT(`L)
+    COUT(`!)
+    CROUT()
+    EXIT()
+}
+
+let (
+    PTR1 = $06
+    PTR2 = $08
+    PTR3 = $FE
+)
+
+let (
+    NUL = $00
+    ONE = 1
+    TWO = 2
+)
+
+let Dimensions = [Width: int, Height: int, Depth: int]
+
+var [
+    varb: byte
+    varw: word
+    dims: Dimensions
+
+    arrb: byte^12
+    arrw: word^6
+    arrg: Dimensions^4
+
+    ptrb: byte^ @ PTR1
+    ptrw: word^ @ PTR2
+    ptrg: Dimensions^ @ PTR3
+
+    rega: byte @ A
+    regx: byte @ X
+    regy: byte @ Y
+    regya: word @ YA
+]
+
+let OutputOne = sub -> [one: int] {
+    one := 1
+    ->
+}
+
+let OutputRegA = sub -> [acc: byte @ A] {
+    acc := `A
+    ->
+}
+
+let main = sub {
+    varb := OutputRegA()
+    varb := OutputOne()
+
+    rega := 5
+    regx := 5
+    regy := 5
+    regy := regx
+    varb := $9021
+    regya := ptrb_6
+
+    regya := $9021
+
+    varb := $42      ; SETBB varb #$42
+    varb := $9021    ; SETBB varb #$21
+
+    varw := $42      ; SETWB varw #$42
+    varw := $9021    ; SETWW varw #$9021
+
+    ;dims := (Width=1, Height=2, Depth=3)
+    ; SETBB dims+0 #1
+    ; SETBB dims+1 #2
+    ; SETBB dims+2 #3
+
+    arrb_2   := varb; SETBB arrb+2 varb
+    arrb_TWO := varw; SETBB arrb+TWO varw
+    arrb_varb := 42 ; SETBB arrb,varb #42
+    ; arrb_varw := 100  ; error: variable index is not byte size: varw.
+
+    ptrb_6 := $21
+    ; ptrw_$03 := $21    ; error: only byte pointers can be indexed: ptrw_$03
+
+}
+

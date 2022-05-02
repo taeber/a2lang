@@ -17,7 +17,7 @@ function _a2_completions
 {
     if [ "${#COMP_WORDS[@]}" == "2" ]
     then
-        COMPREPLY=($(compgen -W "bash build clean help run" "${COMP_WORDS[-1]}"))
+        COMPREPLY=($(compgen -W "bash build clean compile help run" "${COMP_WORDS[-1]}"))
     elif [ "${COMP_WORDS[-1]}" == "-" ]
     then
         COMPREPLY=($(compgen -W "-o" "${COMP_WORDS[-1]}"))
@@ -33,10 +33,12 @@ function build
             ;;
     esac
 
+    pushd src/
     make
-    ./compile $* | expand -t12
+    popd
+    compile $*
     deps
-    deps/a2asm <(./compile $*) >$AOUT
+    deps/a2asm <(compile $*) >$AOUT
     echo "Apple DOS 3.3 binary written to:"
     echo "    $AOUT"
 }
@@ -44,7 +46,14 @@ function build
 function clean
 {
     rm -rf ./deps ./build
+    pushd src/
     make clean
+    popd
+}
+
+function compile
+{
+    src/compile $* | expand -t16
 }
 
 function deps
@@ -113,7 +122,7 @@ function run
 }
 
 case "$1" in
-bash|build|clean|run)
+bash|build|clean|compile|run)
     $*
     ;;
 
@@ -126,11 +135,12 @@ help|*)
     echo ""
     echo "The commands are:"
     echo ""
-    echo "    bash   adds bash tab completion for a2"
-    echo "    build  compile and assemble A2 into 6502 binary"
-    echo "    clean  delete build files and dependencies"
-    echo "    help   view this help message"
-    echo "    run    run a 6502 binary in an emulator"
+    echo "    bash     adds bash tab completion for a2"
+    echo "    build    compile and assemble A2 into 6502 binary"
+    echo "    compile  compile A2 into 6502 assembly"
+    echo "    clean    delete build files and dependencies"
+    echo "    help     view this help message"
+    echo "    run      run a 6502 binary in an emulator"
     echo ""
     echo "For Bash, you can add an a2 alias with tab completion with:"
     echo ""

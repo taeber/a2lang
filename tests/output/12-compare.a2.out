@@ -1,0 +1,100 @@
+*
+	ORG $800
+	JSR main
+	JMP EXIT
+EXIT	EQU $3D0
+INIT	EQU $FB2F
+HOME	EQU $FC58
+COUT	EQU $FDED
+CROUT	EQU $FD8E
+PTR	EQU $06
+Println.msg	EQU PTR
+* COPYBB @Y #$00
+Println	LDY #$00
+* IFNE (Println.msg),@Y #$00
+*   Println._1 Println._2
+Println._0	LDA (Println.msg),Y
+	CMP #$00
+	BNE Println._1
+	JMP Println._2
+* COPYBB @A (Println.msg),@Y
+Println._1	LDA (Println.msg),Y
+	JSR COUT
+* ADDBB @Y #$01
+	INY
+	JMP Println._0
+Println._2	JSR CROUT
+Println._end	RTS
+main	JSR INIT
+	JSR HOME
+* COPYBB main.i #$15
+	LDA #$15
+	STA main.i
+* IFLT main.i #$17
+*   main._4 main._5
+main._3	LDA main.i
+	CMP #$17
+	BCC main._4
+	JMP main._5
+main._4	LDA #<A2_6
+	LDX #>A2_6
+	STX Println.msg+1
+	STA Println.msg
+	JSR Println
+* COPYBB main.i #$17
+main._5	LDA #$17
+	STA main.i
+* IFGE #$17 main.i
+*   main._8 main._9
+main._7	LDA #$17
+	CMP main.i
+	BCS main._8
+	JMP main._9
+main._8	LDA #<A2_10
+	LDX #>A2_10
+	STX Println.msg+1
+	STA Println.msg
+	JSR Println
+* IFGE main.i #$17
+*   main._12 main._13
+main._11	LDA main.i
+	CMP #$17
+	BCS main._12
+	JMP main._13
+main._12	LDA #<A2_14
+	LDX #>A2_14
+	STX Println.msg+1
+	STA Println.msg
+	JSR Println
+* COPYBB main.i #$2A
+main._13	LDA #$2A
+	STA main.i
+* IFLT #$17 main.i
+*   main._16 main._17
+main._15	LDA #$17
+	CMP main.i
+	BCC main._16
+	JMP main._17
+main._16	LDA #<A2_18
+	LDX #>A2_18
+	STX Println.msg+1
+	STA Println.msg
+	JSR Println
+main._17	LDA #<A2_19
+	LDX #>A2_19
+	STX Println.msg+1
+	STA Println.msg
+	JSR Println
+main._end	RTS
+main._9	EQU main._11
+main.i	HEX 00
+A2_6	ASC "21 < 23"
+	HEX 00
+A2_10	ASC "23 <= 23"
+	HEX 00
+A2_14	ASC "23 >= 23"
+	HEX 00
+A2_18	ASC "42 > 23"
+	HEX 00
+A2_19	ASC "OK"
+	HEX 00

@@ -1,0 +1,78 @@
+asm {
+	ORG $800
+	JSR main
+	JMP EXIT
+}
+
+use [
+    EXIT  : sub @ $3D0
+    INIT  : sub @ $FB2F
+    HOME  : sub @ $FC58
+    COUT  : sub <- [ch: char @ A] @ $FDED
+    CROUT : sub @ $FD8E
+    PRBYTE: sub <- [byte: byte @ A] @ $FDDA
+]
+
+let ANSWER = 42
+
+let Assert = sub <- [actual: byte, expected: byte] {
+    PRBYTE(expected)
+    if actual == expected {
+        COUT(`=)
+        COUT(`=)
+        PRBYTE(actual)
+        CROUT()
+        ->
+    }
+    COUT(`<)
+    COUT(`>)
+    PRBYTE(actual)
+    CROUT()
+    COUT(`F)
+    COUT(`A)
+    COUT(`I)
+    COUT(`L)
+    COUT(`!)
+    CROUT()
+    EXIT()
+}
+
+let main = sub {
+    INIT()
+    HOME()
+
+    var value: int
+
+    value := 42
+    Assert(value, 42)
+
+    value -= ANSWER
+    Assert(value, 0)
+
+    value += 23
+    Assert(value, 23)
+
+    value := 0
+    value -= 42
+    Assert(value, -42)
+
+    value := 255
+    value += 1   ; Overflows
+    Assert(value, 0)
+
+    value := 0
+    value -= 1
+    Assert(value, $FF)
+
+    value := 7
+    var other: int
+    other := 4
+    value -= other
+    Assert(value, 3)
+
+    var values: int^4
+    values_2 := 9
+    values_2 -= other
+    Assert(values_2, 5)
+}
+

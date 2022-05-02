@@ -1,0 +1,7 @@
+var [
+    arrb: byte^12
+    varw: word
+]
+
+; error: variable index is not byte size: varw.
+arrb_varw := 100
