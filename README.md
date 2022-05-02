@@ -37,6 +37,7 @@ let Println = sub <- [txt: text @ PTR] {
 }
 
 let main = sub {
+    CROUT()
     Println("Hello, world!")
 }
 ```
@@ -56,12 +57,14 @@ thing. And if you *are* into that kind of thing, check out my
 ```
 $ git clone https://github.com/taeber/a2lang
 $ cd a2lang
-$ edit hello.a2
-$ ./a2 build hello.a2
+$ ./a2 build samples/hello.a2
 $ ./a2 run
-# Opens an Apple II emulator. Load the build/DISK.DSK disk image, then run:
+# Opens an Apple II emulator.
+# Load the build/DISK.DSK disk image, then run:
 ]BRUN PROG
 ```
+
+![Screenshot of hello.a2 running in MAME](screenshot.png)
 
 ## Types
 

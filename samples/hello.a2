@@ -36,5 +36,6 @@ let Println = sub <- [txt: text @ PTR] {
 }
 
 let main = sub {
+    CROUT()
     Println("Hello, world!")
 }
