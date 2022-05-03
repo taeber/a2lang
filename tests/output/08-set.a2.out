@@ -75,7 +75,6 @@ OutputRegA	LDA #"A"
 OutputRegA._end	RTS
 main	JSR OutputRegA
 * COPYBB varb @A
-	TAY
 	STA varb
 	JSR OutputOne
 * COPYBB varb OutputOne.one
@@ -88,8 +87,8 @@ main	JSR OutputRegA
 * COPYBB @Y #$05
 	LDY #$05
 * COPYBB @Y @X
+	TYA
 	TAX
-	TAY
 * COPYBB varb #$90,#$21
 	LDA #$21
 	STA varb

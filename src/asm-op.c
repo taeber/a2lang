@@ -159,6 +159,56 @@ static void loadAddr(const struct Operand *src)
     fatalf("%s: unhandled mode type: %d", __func__, src->mode);
 }
 
+static void transfer(char dst, char src)
+{
+    switch (dst) {
+    case 'A':
+        switch (src) {
+        case 'X':
+            TAX();
+            return;
+        case 'Y':
+            TAY();
+            return;
+        case 'A':
+            // do nothing
+            return;
+        }
+        break;
+
+    case 'X':
+        switch (src) {
+        case 'Y':
+            TXA();
+            TAY();
+            return;
+        case 'A':
+            TXA();
+            return;
+        case 'X':
+            // do nothing
+            return;
+        }
+        break;
+
+    case 'Y':
+        switch (src) {
+        case 'X':
+            TYA();
+            TAX();
+            return;
+        case 'A':
+            TYA();
+            return;
+        case 'Y':
+            // do nothing
+            return;
+        }
+        break;
+    }
+    fatalf("unhandled register transfer: %s <- %s", dst, src);
+}
+
 static void loadByte(char dstRegister, const struct Operand *src)
 {
     Load LD = LDA;
@@ -203,18 +253,8 @@ static void loadByte(char dstRegister, const struct Operand *src)
         }
         return;
     case MODE_REGISTER:
-        switch (regLow(src)) {
-        case 'X':
-            TAX();
-            // fallthru
-        case 'A':
-            TAY();
-            return;
-        case 'Y':
-            // do nothing
-            return;
-        }
-        fatalf("%s: unhandled register: %s", __func__, src->immlo);
+        transfer(dstRegister, regLow(src));
+        return;
     }
 
     fatalf("%s: unhandled mode type: %d", __func__, src->mode);
