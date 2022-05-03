@@ -229,6 +229,7 @@ Or, you know, sponser me to work on it full time and I'll find all the bugs for 
 ## See Also
 
 * [a2asm](https://github.com/taeber/a2asm): a simple 6502 assembler I wrote in Go.
+* [vim-a2](https://github.com/taeber/vim-a2): my VIM plugin for A2.
 * [vim-peg](https://github.com/taeber/vim-peg): my VIM plugin for PEG.
 * [apple2js](https://github.com/whscullin/apple2js): Apple II emulators written in JavaScript
 * [Ample](https://github.com/ksherlock/ample): frontend for MAME as an Apple II emulator
