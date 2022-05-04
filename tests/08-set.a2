@@ -100,9 +100,9 @@ let main = sub {
     varw := $9021    ; SETWW varw #$9021
 
     ;dims := (Width=1, Height=2, Depth=3)
-    ; SETBB dims+0 #1
-    ; SETBB dims+1 #2
-    ; SETBB dims+2 #3
+    dims.Width := 1
+    dims.Height := 2
+    dims.Depth := 3
 
     arrb_2   := varb; SETBB arrb+2 varb
     arrb_TWO := varw; SETBB arrb+TWO varw
@@ -112,5 +112,7 @@ let main = sub {
     ptrb_6 := $21
     ; ptrw_$03 := $21    ; error: only byte pointers can be indexed: ptrw_$03
 
+    ptrg := dims
+    ptrg.Depth := 100
 }
 

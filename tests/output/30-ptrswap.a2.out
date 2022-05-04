@@ -34,24 +34,24 @@ main	JSR INIT
 	STA DST
 	STX DST+1
 main.world	EQU DST
-* COPYBB @A (main.world),$00
-	LDY $00
+* COPYBB @A (main.world),#$00
+	LDY #$00
 	LDA (main.world),Y
 	JSR COUT
-* COPYBB @A (main.world),$01
-	LDY $01
+* COPYBB @A (main.world),#$01
+	LDY #$01
 	LDA (main.world),Y
 	JSR COUT
-* COPYBB @A (main.world),$02
-	LDY $02
+* COPYBB @A (main.world),#$02
+	LDY #$02
 	LDA (main.world),Y
 	JSR COUT
-* COPYBB @A (main.world),$03
-	LDY $03
+* COPYBB @A (main.world),#$03
+	LDY #$03
 	LDA (main.world),Y
 	JSR COUT
-* COPYBB @A (main.world),$04
-	LDY $04
+* COPYBB @A (main.world),#$04
+	LDY #$04
 	LDA (main.world),Y
 	JSR COUT
 	JSR CROUT

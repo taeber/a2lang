@@ -93,8 +93,8 @@ main	JSR OutputRegA
 	LDA #$21
 	STA varb
 * WARNING: VALUE TRUNCATED
-* COPYWB @YA (ptrb),$06
-	LDY $06
+* COPYWB @YA (ptrb),#$06
+	LDY #$06
 	LDA (ptrb),Y
 	LDY #0
 * COPYWW @YA #$90,#$21
@@ -117,6 +117,15 @@ main	JSR OutputRegA
 	LDX #$90
 	STA varw
 	STX varw+1
+* COPYBB dims+0 #$01
+	LDA #$01
+	STA dims+0
+* COPYBB dims+1 #$02
+	LDA #$02
+	STA dims+1
+* COPYBB dims+2 #$03
+	LDA #$03
+	STA dims+2
 * COPYBB arrb+$02 varb
 	LDA varb
 	STA arrb+$02
@@ -128,10 +137,18 @@ main	JSR OutputRegA
 	LDA #$2A
 	LDY varb
 	STA arrb,Y
-* COPYBB (ptrb),$06 #$21
+* COPYBB (ptrb),#$06 #$21
 	LDA #$21
 	LDY #$06
 	STA (ptrb),Y
+	LDA #<dims
+	LDX #>dims
+	STX ptrg+1
+	STA ptrg
+* COPYBB (ptrg),#2 #$64
+	LDA #$64
+	LDY #2
+	STA (ptrg),Y
 main._end	RTS
 Assert.actual	HEX 00
 Assert.expected	HEX 00

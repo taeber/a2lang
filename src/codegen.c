@@ -17,9 +17,9 @@ static inline struct Symbol *getsym(const struct String *name)
 }
 
 // Converts an IdentPhrase to an Operand.
-static struct Operand *reduce(const struct IdentPhrase *lhs)
+static struct Operand *reduce(const struct IdentPhrase *id)
 {
-    struct Symbol *identsym = getsym(&lhs->identifier.String);
+    struct Symbol *identsym = getsym(&id->identifier.String);
 
     enum Register reg = GetRegister(identsym);
     if (reg != REG_NONE) {
@@ -30,7 +30,7 @@ static struct Operand *reduce(const struct IdentPhrase *lhs)
         return OpRegister(name[0]);
     }
 
-    if (!lhs->subscript && !lhs->field) {
+    if (!id->subscript && !id->field) {
         uint16_t size = GetSize(identsym);
         require(size <= 0xFF, "too big");
         if (IsLiteral(identsym)) {
@@ -39,46 +39,55 @@ static struct Operand *reduce(const struct IdentPhrase *lhs)
         return OpAbsolute(GetName(identsym), size);
     }
 
-    if (lhs->subscript) {
+    if (id->subscript) {
         uint8_t size = GetBaseSize(identsym);
         if (IsPointer(identsym)) {
             // Pointers
             require(size == 1,
                 "only byte pointers can be indexed: %s",
-                phrase(lhs));
-            return OpIndirectOffset(GetName(identsym), indextxt(lhs->subscript), size);
+                phrase(id));
+            return OpIndirectOffset(GetName(identsym), indextxt(id->subscript), size);
         }
         // Arrays
         int32_t itemCount = GetItemCount(identsym);
         require(itemCount > 0, "expected array");
 
         struct Symbol *indexsym = NULL;
-        bool isVar = false;
 
-        switch (lhs->subscript->type) {
+        switch (id->subscript->type) {
         case NUM_IDENT:
-            indexsym = getsym(&lhs->subscript->Identifier.String);
+            indexsym = getsym(&id->subscript->Identifier.String);
             require(!IsVariable(indexsym) || GetSize(indexsym) == 1,
                 "variable index is not byte size: %s",
-                string(&lhs->subscript->Identifier.String));
+                string(&id->subscript->Identifier.String));
             // This is a workaround for a2asm's lack of support for
             // identifiers in arithmetic expressions.
             if (IsLiteral(indexsym)) {
                 return OpOffset(GetName(identsym), hex4(GetNumber(indexsym)), false, size);
             }
-            isVar = IsVariable(indexsym);
+            return OpOffset(GetName(identsym), strcopy(GetName(indexsym)), IsVariable(indexsym), size);
             // fallthrough
         case NUM_NUMBER:
-            return OpOffset(GetName(identsym), numerical(lhs->subscript), isVar, size);
+            return OpOffset(GetName(identsym), numerical(id->subscript), false, size);
 
         case NUM_NONE:
         default:
             fatalf("%s: unsupported numerical type for index: %d",
                 __func__,
-                lhs->subscript->type);
+                id->subscript->type);
         }
     }
 
+    if (id->field) {
+        // Member
+        const struct Symbol *mem = GetMember(identsym, &id->field->String, 0);
+        if (IsPointer(identsym)) {
+            return OpIndirectOffset(GetName(identsym), stringf("#%u", GetOffset(mem)), GetSize(mem));
+        }
+        return OpOffset(GetName(identsym), stringf("%u", GetOffset(mem)), false, GetSize(mem));
+    }
+
+    fatalf("%s: failed to reduce phrase: %s", __func__, phrase(id));
     return NULL;
 }
 
@@ -755,7 +764,7 @@ char *indextxt(const struct Numerical *num)
     }
     case NUM_NUMBER:
         require(num->Number <= 0xFF && num->Number >= -128, "bad byte offset: %d", num->Number);
-        return hex2((uint8_t)num->Number);
+        return immediate(hex2((uint8_t)num->Number));
     case NUM_NONE:
         break;
     }

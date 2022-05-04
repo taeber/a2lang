@@ -378,7 +378,7 @@ static void storeByte(const struct Operand *dst)
         STA(stringf("%s,Y", dst->base));
         return;
     case MODE_INDIRECT_OFFSET:
-        LDY(stringf("#%s", dst->offset));
+        LDY(stringf("%s", dst->offset));
         STA(stringf("(%s),Y", dst->base));
         return;
     case MODE_REGISTER:
