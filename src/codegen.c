@@ -590,13 +590,19 @@ static void generatePoint(const char *pointer, const struct Value *rhs)
     FreeOperand(src);
 }
 
+static inline bool isPhrasePointer(const struct IdentPhrase *id)
+{
+    return (!id || id->field || id->subscript)
+        ? false
+        : IsPointer(getsym(&id->identifier.String));
+}
+
 void generateSet(const struct IdentPhrase *lhs, const struct Value *rhs)
 {
-    struct Symbol *sym = getsym(&lhs->identifier.String);
-
-    bool isPointer = IsPointer(sym) && !lhs->field && !lhs->subscript;
-    if (isPointer) {
-        generatePoint(GetName(sym), rhs);
+    bool isSrcPointer = rhs->type == VAL_IDENT && isPhrasePointer(&rhs->IdentPhrase);
+    if (!isSrcPointer && isPhrasePointer(lhs)) {
+        // ptr := nonPTR
+        generatePoint(GetName(getsym(&lhs->identifier.String)), rhs);
         return;
     }
 

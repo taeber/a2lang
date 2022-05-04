@@ -26,10 +26,11 @@ Println._end	RTS
 PrintAt.txt	EQU $06
 * COPYBB CH @A
 PrintAt	STA CH
-	LDA #<PrintAt.txt
-	LDX #>PrintAt.txt
-	STX Println.txt+1
+* COPYWW Println.txt PrintAt.txt
+	LDA PrintAt.txt
+	LDX PrintAt.txt+1
 	STA Println.txt
+	STX Println.txt+1
 	JSR Println
 PrintAt._end	RTS
 main	JSR INIT
