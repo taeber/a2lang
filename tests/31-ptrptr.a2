@@ -1,0 +1,42 @@
+asm {
+	ORG $800
+	JSR main
+	JMP $3D0
+}
+
+use [
+    INIT: sub @ $FB2F,  ; AKA TEXT
+    HOME: sub @ $FC58,
+
+    COUT : sub <- [ch: char @ A] @ $FDED,
+    CROUT: sub @ $FD8E,
+]
+
+var CH: byte @ $24
+
+let Println = sub <- [txt: text @ $06] {
+    var [
+        i  :int @ Y,
+        ch :char,
+    ]
+
+    i := 0
+    while txt_i <> 0 {
+        COUT(txt_i)
+        i  += 1
+    }
+
+    CROUT()
+}
+
+let PrintAt = sub <- [txt: text @ $06, col: int @ A] {
+    CH := col
+    Println(txt)
+}
+
+let main = sub {
+    INIT()
+    HOME()
+    PrintAt("Hello, 1979!", col=13)
+}
+

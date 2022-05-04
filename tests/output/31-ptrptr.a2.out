@@ -1,0 +1,47 @@
+	ORG $800
+	JSR main
+	JMP $3D0
+INIT	EQU $FB2F
+HOME	EQU $FC58
+COUT	EQU $FDED
+CROUT	EQU $FD8E
+CH	EQU $24
+Println.txt	EQU $06
+* COPYBB @Y #$00
+Println	LDY #$00
+* IFNE (Println.txt),@Y #$00
+*   Println._1 Println._2
+Println._0	LDA (Println.txt),Y
+	CMP #$00
+	BNE Println._1
+	JMP Println._2
+* COPYBB @A (Println.txt),@Y
+Println._1	LDA (Println.txt),Y
+	JSR COUT
+* ADDBB @Y #$01
+	INY
+	JMP Println._0
+Println._2	JSR CROUT
+Println._end	RTS
+PrintAt.txt	EQU $06
+* COPYBB CH @A
+PrintAt	STA CH
+	LDA #<PrintAt.txt
+	LDX #>PrintAt.txt
+	STX Println.txt+1
+	STA Println.txt
+	JSR Println
+PrintAt._end	RTS
+main	JSR INIT
+	JSR HOME
+	LDA #<A2_3
+	LDX #>A2_3
+	STX PrintAt.txt+1
+	STA PrintAt.txt
+* COPYBB @A #$0D
+	LDA #$0D
+	JSR PrintAt
+main._end	RTS
+Println.ch	HEX 00
+A2_3	ASC "Hello, 1979!"
+	HEX 00
