@@ -600,10 +600,21 @@ static inline bool isPhrasePointer(const struct IdentPhrase *id)
 void generateSet(const struct IdentPhrase *lhs, const struct Value *rhs)
 {
     bool isSrcPointer = rhs->type == VAL_IDENT && isPhrasePointer(&rhs->IdentPhrase);
-    if (!isSrcPointer && isPhrasePointer(lhs)) {
-        // ptr := nonPTR
-        generatePoint(GetName(getsym(&lhs->identifier.String)), rhs);
-        return;
+
+    if (isPhrasePointer(lhs)) {
+        struct Symbol *dst = getsym(&lhs->identifier.String);
+        if (!isSrcPointer) {
+            // ptr := nonPTR
+            generatePoint(GetName(dst), rhs);
+            return;
+        }
+        struct Symbol *src = getsym(&rhs->IdentPhrase.identifier.String);
+        // ptr := ptr
+        if (strcmp(GetAddress(dst), GetAddress(src)) == 0) {
+            warnf("optimized out assigning pointer to itself: %s := %s",
+                GetName(dst), GetName(src));
+            return;
+        }
     }
 
     struct Operand *dst = reduce(lhs),
