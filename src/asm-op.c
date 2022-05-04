@@ -165,10 +165,10 @@ static void transfer(char dst, char src)
     case 'A':
         switch (src) {
         case 'X':
-            TAX();
+            TXA();
             return;
         case 'Y':
-            TAY();
+            TYA();
             return;
         case 'A':
             // do nothing
@@ -179,11 +179,11 @@ static void transfer(char dst, char src)
     case 'X':
         switch (src) {
         case 'Y':
-            TXA();
-            TAY();
+            TYA();
+            TAX();
             return;
         case 'A':
-            TXA();
+            TAX();
             return;
         case 'X':
             // do nothing
@@ -194,11 +194,11 @@ static void transfer(char dst, char src)
     case 'Y':
         switch (src) {
         case 'X':
-            TYA();
-            TAX();
+            TXA();
+            TAY();
             return;
         case 'A':
-            TYA();
+            TAY();
             return;
         case 'Y':
             // do nothing

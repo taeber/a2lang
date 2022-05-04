@@ -87,8 +87,8 @@ main	JSR OutputRegA
 * COPYBB @Y #$05
 	LDY #$05
 * COPYBB @Y @X
-	TYA
-	TAX
+	TXA
+	TAY
 * COPYBB varb #$90,#$21
 	LDA #$21
 	STA varb
