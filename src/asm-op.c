@@ -130,8 +130,8 @@ static void loadAddr(const struct Operand *src)
         LDX(stringf("#>%s", src->base));
         return;
     case MODE_OFFSET:
-        LDA(stringf("#>%s+%s", src->base, src->offset));
-        LDX(stringf("#<%s+%s", src->base, src->offset));
+        LDA(stringf("#<%s+%s", src->base, src->offset));
+        LDX(stringf("#>%s+%s", src->base, src->offset));
         return;
     case MODE_VARIABLE_OFFSET: {
         // ptr := arrb_varb
