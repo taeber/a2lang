@@ -411,11 +411,17 @@ void generateConditional(const struct Conditional *cond, bool isLoop)
         [COMP_GREATEREQUAL] = IFGE,
     };
 
-    char *lblLoop = MakeLocalLabel(subroutine.name),
-         *lblThen = MakeLocalLabel(subroutine.name),
-         *lblDone = MakeLocalLabel(subroutine.name);
+    const char *unused = UnusedLabel();
+    char *lblLoop;
+    if (unused) {
+        lblLoop = strcopy(unused);
+    } else {
+        lblLoop = MakeLocalLabel(subroutine.name);
+        Label(lblLoop);
+    }
 
-    Label(lblLoop);
+    char *lblThen = MakeLocalLabel(subroutine.name),
+         *lblDone = MakeLocalLabel(subroutine.name);
 
     struct Operand *left  = reduceSimpleValue(&cond->left),
                    *right = reduceSimpleValue(&cond->right);

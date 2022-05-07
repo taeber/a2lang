@@ -74,17 +74,17 @@ A2_4	LDA #$01
 	STA i
 	JMP A2_3
 * IFLT #$00 i
-*   A2_7 A2_8
-A2_6	LDA #$00
+*   A2_6 A2_7
+A2_5	LDA #$00
 	CMP i
-	BCC A2_7
-	JMP A2_8
+	BCC A2_6
+	JMP A2_7
 * SUBBB i #NUMPEEPS
-A2_7	LDA #NUMPEEPS
+A2_6	LDA #NUMPEEPS
 	SEC
 	SBC i
 	STA i
-	JMP A2_6
+	JMP A2_5
 false	EQU $00
 true	EQU $01
 * COPYBB done #false
@@ -100,8 +100,7 @@ true	EQU $01
 * TODO: handle STMT_ASSIGN for |=
 * TODO: handle STMT_ASSIGN for &=
 * TODO: handle STMT_ASSIGN for ~=
-A2_5	EQU A2_6
-A2_8	EQU false
+A2_7	EQU false
 Assert.actual	HEX 00
 Assert.expected	HEX 00
 i	HEX 00

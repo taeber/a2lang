@@ -148,6 +148,14 @@ void TXT(const char *name, const char *text)
     data = data->next = Instruction(NULL, OP_HEX, strcopy("00"), NULL, NULL);
 }
 
+const char *UnusedLabel(void)
+{
+    if (code->label[0] != '\0' && code->op == NULL) {
+        return code->label;
+    }
+    return NULL;
+}
+
 void VAR(const char *name, uint16_t size)
 {
     static const unsigned maxPerLine = 32;

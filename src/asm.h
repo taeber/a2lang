@@ -64,6 +64,8 @@ void EQU(const char *name, char *operand);
 
 // Add a label.
 void Label(const char *label);
+// Returns the label that was last added only if it doesn't have instructions.
+const char *UnusedLabel(void);
 
 // Write all the instructions out to fp.
 void WriteInstructions(FILE *fp);

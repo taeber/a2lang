@@ -56,45 +56,44 @@ main._8	LDA #<A2_10
 	STA Println.msg
 	JSR Println
 * IFGE main.i #$17
-*   main._12 main._13
-main._11	LDA main.i
+*   main._11 main._12
+main._9	LDA main.i
 	CMP #$17
-	BCS main._12
-	JMP main._13
-main._12	LDA #<A2_14
-	LDX #>A2_14
+	BCS main._11
+	JMP main._12
+main._11	LDA #<A2_13
+	LDX #>A2_13
 	STX Println.msg+1
 	STA Println.msg
 	JSR Println
 * COPYBB main.i #$2A
-main._13	LDA #$2A
+main._12	LDA #$2A
 	STA main.i
 * IFLT #$17 main.i
-*   main._16 main._17
-main._15	LDA #$17
+*   main._15 main._16
+main._14	LDA #$17
 	CMP main.i
-	BCC main._16
-	JMP main._17
+	BCC main._15
+	JMP main._16
+main._15	LDA #<A2_17
+	LDX #>A2_17
+	STX Println.msg+1
+	STA Println.msg
+	JSR Println
 main._16	LDA #<A2_18
 	LDX #>A2_18
 	STX Println.msg+1
 	STA Println.msg
 	JSR Println
-main._17	LDA #<A2_19
-	LDX #>A2_19
-	STX Println.msg+1
-	STA Println.msg
-	JSR Println
 	RTS
-main._9	EQU main._11
 main.i	HEX 00
 A2_6	ASC "21 < 23"
 	HEX 00
 A2_10	ASC "23 <= 23"
 	HEX 00
-A2_14	ASC "23 >= 23"
+A2_13	ASC "23 >= 23"
 	HEX 00
-A2_18	ASC "42 > 23"
+A2_17	ASC "42 > 23"
 	HEX 00
-A2_19	ASC "OK"
+A2_18	ASC "OK"
 	HEX 00

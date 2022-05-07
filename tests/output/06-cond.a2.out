@@ -14,51 +14,46 @@ Check._1	LDA #TRUE
 	STA Check.is
 	RTS
 * IFNE Check.val #$00
-*   Check._4 Check._5
-Check._3	LDA Check.val
+*   Check._3 Check._4
+Check._2	LDA Check.val
 	CMP #$00
-	BNE Check._4
-	JMP Check._5
-Check._4	RTS
+	BNE Check._3
+	JMP Check._4
+Check._3	RTS
 * IFGE #$00 Check.val
+*   Check._5 Check._6
+Check._4	LDA #$00
+	CMP Check.val
+	BCS Check._5
+	JMP Check._6
+* IFLT Check.val #$00
 *   Check._7 Check._8
+Check._5	LDA Check.val
+	CMP #$00
+	BCC Check._7
+	JMP Check._8
+Check._7	RTS
+* COPYBB Check.is #TRUE
+Check._8	LDA #TRUE
+	STA Check.is
+	RTS
+* IFGE #$00 Check.val
+*   Check._9 Check._10
 Check._6	LDA #$00
 	CMP Check.val
-	BCS Check._7
-	JMP Check._8
+	BCS Check._9
+	JMP Check._10
 * IFLT Check.val #$00
-*   Check._10 Check._11
+*   Check._11 Check._12
 Check._9	LDA Check.val
 	CMP #$00
-	BCC Check._10
-	JMP Check._11
+	BCC Check._11
+	JMP Check._12
+Check._11	RTS
+* COPYBB Check.is #TRUE
+Check._12	LDA #TRUE
+	STA Check.is
+	RTS
 Check._10	RTS
-* COPYBB Check.is #TRUE
-Check._11	LDA #TRUE
-	STA Check.is
-	RTS
-* IFGE #$00 Check.val
-*   Check._13 Check._14
-Check._12	LDA #$00
-	CMP Check.val
-	BCS Check._13
-	JMP Check._14
-* IFLT Check.val #$00
-*   Check._16 Check._17
-Check._15	LDA Check.val
-	CMP #$00
-	BCC Check._16
-	JMP Check._17
-Check._16	RTS
-* COPYBB Check.is #TRUE
-Check._17	LDA #TRUE
-	STA Check.is
-	RTS
-Check._14	RTS
-Check._2	EQU Check._3
-Check._5	EQU Check._6
-Check._7	EQU Check._9
-Check._8	EQU Check._12
-Check._13	EQU Check._15
 Check.val	HEX 00
 Check.is	HEX 00
