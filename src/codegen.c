@@ -7,13 +7,62 @@
 #include "symbols.h"
 #include "text.h"
 
-static struct {
-    const struct String *name;
-} subroutine;
+struct Scope {
+    const struct String *subr;
+    const char          *loop;
+    const char          *done;
+    struct Scope        *prev;
+};
+
+struct Scope *Scope(const struct String *subr, const char *loop, const char *done, struct Scope *prev)
+{
+    require(subr || (loop && done), "missing arguments to Scope");
+    struct Scope *scope = calloc(1, sizeof *scope);
+    require(scope, "failed to allocate memory for Scope");
+    scope->subr = subr;
+    scope->loop = loop;
+    scope->done = done;
+    scope->prev = prev;
+    return scope;
+}
+
+static struct Scope  global;
+static struct Scope *scope = &global;
+
+static inline void enterLoop(const char *loop, const char *done) { scope = Scope(NULL, loop, done, scope); }
+static inline void enterSubroutine(const struct String *subr) { scope = Scope(subr, NULL, NULL, scope); }
+
+static void leaveScope(void)
+{
+    require(scope != &global, "cannot leave global scope");
+    struct Scope *old = scope;
+    scope = old->prev;
+    free(old);
+}
+
+static const struct String *subroutineName(void)
+{
+    for (struct Scope *p = scope; p && p != &global; p = p->prev) {
+        if (p->subr) {
+            return p->subr;
+        }
+    }
+    return NULL;
+}
+
+static const struct Scope *getLoop(void)
+{
+    for (struct Scope *p = scope; p && p != &global; p = p->prev) {
+        if (p->loop) {
+            return p;
+        }
+    }
+    return NULL;
+}
 
 static inline struct Symbol *getsym(const struct String *name)
 {
-    return LookupScoped(subroutine.name, name);
+    return LookupScoped(subroutineName(), name);
 }
 
 // Converts an IdentPhrase to an Operand.
@@ -185,7 +234,7 @@ void declareSubroutine(const struct String *name, const struct Subroutine *subr,
 
 void defineGroup(const struct String *name, const struct Parameters *members)
 {
-    struct Symbol  *group = DeclareGroup(qualify(subroutine.name, name));
+    struct Symbol  *group = DeclareGroup(qualify(subroutineName(), name));
     struct Location loc   = { 0 };
 
     for (unsigned i = 0; i < members->len; i++) {
@@ -218,7 +267,7 @@ void defineGroup(const struct String *name, const struct Parameters *members)
 
 void defineSubroutine(const struct String *name, const struct Subroutine *subr)
 {
-    subroutine.name = name;
+    enterSubroutine(name);
 
     char *subname = string(name);
     if (!TryLookup(subname)) {
@@ -234,14 +283,14 @@ void defineSubroutine(const struct String *name, const struct Subroutine *subr)
     RTS();
     free(subname);
 
-    subroutine.name = NULL;
+    leaveScope();
 }
 
 const char *defineText(const struct String *label, const struct String *text)
 {
     char *name = NULL;
     if (label) {
-        name = qualify(subroutine.name, label);
+        name = qualify(subroutineName(), label);
     }
     struct Symbol *sym     = DefineLiteralText(name, string(text));
     const char    *outname = GetName(sym);
@@ -416,12 +465,16 @@ void generateConditional(const struct Conditional *cond, bool isLoop)
     if (unused) {
         lblLoop = strcopy(unused);
     } else {
-        lblLoop = MakeLocalLabel(subroutine.name);
+        lblLoop = MakeLocalLabel(subroutineName());
         Label(lblLoop);
     }
 
-    char *lblThen = MakeLocalLabel(subroutine.name),
-         *lblDone = MakeLocalLabel(subroutine.name);
+    char *lblThen = MakeLocalLabel(subroutineName()),
+         *lblDone = MakeLocalLabel(subroutineName());
+
+    if (isLoop) {
+        enterLoop(lblLoop, lblDone);
+    }
 
     struct Operand *left  = reduceSimpleValue(&cond->left),
                    *right = reduceSimpleValue(&cond->right);
@@ -436,6 +489,10 @@ void generateConditional(const struct Conditional *cond, bool isLoop)
     }
 
     Label(lblDone);
+
+    if (isLoop) {
+        leaveScope();
+    }
 
     free(lblDone);
     free(lblThen);
@@ -452,7 +509,7 @@ void generateDeclaration(const struct Parameter *decl)
         struct Location loc = location(&decl->loc);
         switch (loc.type) {
         case LOC_FIXED: {
-            char *label = qualify(subroutine.name, &decl->name.String);
+            char *label = qualify(subroutineName(), &decl->name.String);
             EQU(label, strcopy(loc.addr));
             free(label);
             break;
@@ -470,10 +527,10 @@ void generateDeclaration(const struct Parameter *decl)
 
     switch (decl->type.type) {
     case TYPE_SUBROUTINE:
-        require(!subroutine.name,
+        require(!subroutineName(),
             "cannot nest subroutines: %.*s in %.*s",
             name->len, name->text,
-            subroutine.name->len, subroutine.name->text);
+            subroutineName()->len, subroutineName()->text);
         declareSubroutine(name, &decl->type.Subroutine, &decl->loc);
         return;
     case TYPE_POINTER:
@@ -482,7 +539,7 @@ void generateDeclaration(const struct Parameter *decl)
         // fallthru
     case TYPE_IDENT:
         AddConstant(
-            TryLookupSubroutine(subroutine.name),
+            TryLookupSubroutine(subroutineName()),
             string(&decl->name.String),
             typeinfo(&decl->type),
             location(&decl->loc));
@@ -547,13 +604,13 @@ void generateDefinitions(const struct Definition *definitions)
 
 void generateLiteralChar(const struct String *name, char ch)
 {
-    struct Symbol *lit = DefineLiteralChar(qualify(subroutine.name, name), ch);
+    struct Symbol *lit = DefineLiteralChar(qualify(subroutineName(), name), ch);
     EQU(GetName(lit), asciich(ch));
 }
 
 void generateLiteralNumber(const struct String *name, int number)
 {
-    struct Symbol *lit = DefineLiteralNumber(qualify(subroutine.name, name), number);
+    struct Symbol *lit = DefineLiteralNumber(qualify(subroutineName(), name), number);
     if (GetSize(lit) == 2 || IsCallable(lit)) {
         EQU(GetName(lit), hex4(number));
         return;
@@ -602,6 +659,15 @@ static void generatePoint(const char *pointer, const struct Value *rhs)
 
     FreeOperand(src);
 }
+
+void generateRepeat(void)
+{
+    const struct Scope *loop = getLoop();
+    require(loop, "cannot call repeat outside of a loop");
+    REM(strcopy("REPEAT"));
+    JMP(strcopy(loop->loop));
+}
+
 
 static inline bool isPhrasePointer(const struct IdentPhrase *id)
 {
@@ -709,10 +775,10 @@ void generateStatement(const struct Statement *stmt)
         RTS();
         return;
     case STMT_STOP:
-        REM(strcopy("TODO: handle STMT_STOP"));
+        generateStop();
         return;
     case STMT_REPEAT:
-        REM(strcopy("TODO: handle STMT_REPEAT"));
+        generateRepeat();
         return;
     case STMT_ASSEMBLY:
         generateAssembly(&stmt->Assembly);
@@ -723,10 +789,18 @@ void generateStatement(const struct Statement *stmt)
     fatalf("unknown statement type: %d", stmt->type);
 }
 
+void generateStop(void)
+{
+    const struct Scope *loop = getLoop();
+    require(loop, "cannot call stop outside of a loop");
+    REM(strcopy("STOP"));
+    JMP(strcopy(loop->done));
+}
+
 void generateVariable(const struct Parameter *var)
 {
     struct Symbol *sym = AddVariable(
-        TryLookupSubroutine(subroutine.name),
+        TryLookupSubroutine(subroutineName()),
         string(&var->name.String),
         typeinfo(&var->type),
         location(&var->loc));

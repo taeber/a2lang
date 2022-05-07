@@ -25,6 +25,7 @@ void generateArithmetic(const struct IdentPhrase *lhs, const struct Value *rhs, 
 void generateBlock(const struct Block *block);
 void generateCall(const struct Call *call);
 void generateConditional(const struct Conditional *cond, bool isLoop);
+void generateStop(void);
 void generateDeclarations(const struct Declaration *declaration);
 void generateDeclaration(const struct Parameter *decl);
 void generateVariables(const struct Variable *Variable);

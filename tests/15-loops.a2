@@ -1,0 +1,36 @@
+asm {
+	ORG $2000
+}
+
+use [
+    COUT : sub <- [ch: char @ A]   @ $FDED
+    DOS  : sub @ $3D0
+    HOME : sub @ $FC58,
+    INIT : sub @ $FB2F,  ; AKA TEXT
+    RDKEY: sub -> [key: byte @ A]  @ $FD0C
+]
+
+INIT()
+HOME()
+
+var key: byte
+
+let CR = $8D
+
+key := CR
+
+while 0 == 0 {
+    while 1 <> 0 {
+        key := RDKEY()
+        if key == `A {
+            repeat
+        }
+        COUT()
+        if key == `Q {
+            stop
+        }
+    }
+    stop
+}
+
+DOS()
