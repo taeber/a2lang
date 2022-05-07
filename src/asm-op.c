@@ -719,6 +719,15 @@ static void compareByte(char reg, const struct Operand *val)
     fatalf("%s: unhandled mode type: %d", __func__, val->mode);
 }
 
+static void compareByteUnless0(char reg, const struct Operand *val) {
+    if (val->mode == MODE_IMMEDIATE) {
+        if (val->number.valid && val->number.value == 0) {
+            // No reason to output CMP #0
+            return;
+        }
+    }
+    compareByte(reg, val);
+}
 
 // left == right
 void IFEQ(const struct Operand *left, const struct Operand *right, const char *then, const char *done)
@@ -738,7 +747,7 @@ void IFEQ(const struct Operand *left, const struct Operand *right, const char *t
             JMP(strcopy(done));
         } else {
             loadByte('A', left);
-            compareByte('A', right);
+            compareByteUnless0('A', right);
             BEQ(strcopy(then));
             JMP(strcopy(done));
         }
@@ -756,7 +765,7 @@ void IFEQ(const struct Operand *left, const struct Operand *right, const char *t
             // No need to CMP #$00 because loading affects Z-flag
             BNE(strcopy(done));
             loadByte('A', left);
-            compareByte('A', right);
+            compareByteUnless0('A', right);
             BEQ(strcopy(then));
             JMP(strcopy(done));
 
@@ -777,7 +786,7 @@ void IFEQ(const struct Operand *left, const struct Operand *right, const char *t
             compareByte('A', rmsb);
             BNE(strcopy(done));
             loadByte('A', left);
-            compareByte('A', right);
+            compareByteUnless0('A', right);
             BEQ(strcopy(then));
             JMP(strcopy(done));
 
@@ -802,7 +811,7 @@ void IFGE(const struct Operand *left, const struct Operand *right, const char *t
             JMP(strcopy(done));
         } else {
             loadByte('A', left);
-            compareByte('A', right);
+            compareByteUnless0('A', right);
             BCS(strcopy(then));
             JMP(strcopy(done));
         }
@@ -820,7 +829,7 @@ void IFGE(const struct Operand *left, const struct Operand *right, const char *t
             loadByte('A', msb);
             BNE(strcopy(done));
             loadByte('A', left);
-            compareByte('A', right);
+            compareByteUnless0('A', right);
             BCS(strcopy(then));
             JMP(strcopy(done));
 
@@ -830,7 +839,7 @@ void IFGE(const struct Operand *left, const struct Operand *right, const char *t
         if (left->mode == MODE_REGISTER) {
             compareByte(regHigh(left), &ZEROB);
             BNE(strcopy(then)); // leftH is >0 so left >0xFF > right
-            compareByte(regLow(left), right);
+            compareByteUnless0(regLow(left), right);
             BCS(strcopy(then));
             JMP(strcopy(done));
         } else {
@@ -841,7 +850,7 @@ void IFGE(const struct Operand *left, const struct Operand *right, const char *t
             // No need to BCC(done) because it will ALWAYS be false (u8 cannot be < 0)
             BNE(strcopy(then)); // leftH >0 so left >0xff > right
             loadByte('A', left);
-            compareByte('A', right);
+            compareByteUnless0('A', right);
             BCS(strcopy(then));
             JMP(strcopy(done));
 
@@ -859,11 +868,11 @@ void IFGE(const struct Operand *left, const struct Operand *right, const char *t
             struct Operand *lmsb = highByte(left);
 
             loadByte('A', lmsb);
-            compareByte('A', rmsb);
+            compareByteUnless0('A', rmsb);
             BCC(strcopy(done));
             BNE(strcopy(then));
             loadByte('A', left);
-            compareByte('A', right);
+            compareByteUnless0('A', right);
             BCS(strcopy(then));
             JMP(strcopy(done));
 
@@ -900,7 +909,7 @@ void IFLT(const struct Operand *left, const struct Operand *right, const char *t
             JMP(strcopy(done));
         } else {
             loadByte('A', left);
-            compareByte('A', right);
+            compareByteUnless0('A', right);
             BCC(strcopy(then));
             JMP(strcopy(done));
         }
@@ -918,7 +927,7 @@ void IFLT(const struct Operand *left, const struct Operand *right, const char *t
             BCC(strcopy(then)); // leftH < rightH so left < right
             BNE(strcopy(done)); // leftH <> rightH so leftH > rightH (left >= right)
             loadByte('A', left);
-            compareByte('A', right);
+            compareByteUnless0('A', right);
             BCC(strcopy(then));
             JMP(strcopy(done));
 
@@ -936,11 +945,11 @@ void IFLT(const struct Operand *left, const struct Operand *right, const char *t
             struct Operand *lmsb = highByte(left);
 
             loadByte('A', lmsb);
-            compareByte('A', rmsb);
+            compareByteUnless0('A', rmsb);
             BCC(strcopy(then));
             BNE(strcopy(done));
             loadByte('A', left);
-            compareByte('A', right);
+            compareByteUnless0('A', right);
             BCC(strcopy(then));
             JMP(strcopy(done));
 
@@ -977,7 +986,7 @@ void IFNE(const struct Operand *left, const struct Operand *right, const char *t
             JMP(strcopy(done));
         } else {
             loadByte('A', left);
-            compareByte('A', right);
+            compareByteUnless0('A', right);
             BNE(strcopy(then));
             JMP(strcopy(done));
         }
@@ -995,7 +1004,7 @@ void IFNE(const struct Operand *left, const struct Operand *right, const char *t
             // No need to CMP #$00 because loading affects Z-flag.
             BNE(strcopy(then));
             loadByte('A', left);
-            compareByte('A', right);
+            compareByteUnless0('A', right);
             BNE(strcopy(then));
             JMP(strcopy(done));
 
@@ -1013,10 +1022,10 @@ void IFNE(const struct Operand *left, const struct Operand *right, const char *t
             struct Operand *lmsb = highByte(left);
 
             loadByte('A', lmsb);
-            compareByte('A', rmsb);
+            compareByteUnless0('A', rmsb);
             BNE(strcopy(then));
             loadByte('A', left);
-            compareByte('A', right);
+            compareByteUnless0('A', right);
             BNE(strcopy(then));
             JMP(strcopy(done));
 

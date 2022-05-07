@@ -14,7 +14,6 @@ Println	LDY #$00
 * IFNE (Println.msg),@Y #$00
 *   Println._1 Println._2
 Println._0	LDA (Println.msg),Y
-	CMP #$00
 	BNE Println._1
 	JMP Println._2
 * COPYBB @A (Println.msg),@Y

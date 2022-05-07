@@ -6,7 +6,6 @@ Check	LDA #FALSE
 * IFEQ Check.val #$00
 *   Check._1 Check._2
 Check._0	LDA Check.val
-	CMP #$00
 	BEQ Check._1
 	JMP Check._2
 * COPYBB Check.is #TRUE
@@ -16,7 +15,6 @@ Check._1	LDA #TRUE
 * IFNE Check.val #$00
 *   Check._3 Check._4
 Check._2	LDA Check.val
-	CMP #$00
 	BNE Check._3
 	JMP Check._4
 Check._3	RTS
@@ -29,7 +27,6 @@ Check._4	LDA #$00
 * IFLT Check.val #$00
 *   Check._7 Check._8
 Check._5	LDA Check.val
-	CMP #$00
 	BCC Check._7
 	JMP Check._8
 Check._7	RTS
@@ -46,7 +43,6 @@ Check._6	LDA #$00
 * IFLT Check.val #$00
 *   Check._11 Check._12
 Check._9	LDA Check.val
-	CMP #$00
 	BCC Check._11
 	JMP Check._12
 Check._11	RTS
