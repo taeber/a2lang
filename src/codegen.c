@@ -231,7 +231,7 @@ void defineSubroutine(const struct String *name, const struct Subroutine *subr)
     }
     Label(subname);
     generateBlock(&subr->block);
-    RTS(NULL);
+    RTS();
     free(subname);
 
     subroutine.name = NULL;
@@ -706,7 +706,7 @@ void generateStatement(const struct Statement *stmt)
         generateConditional(&stmt->Conditional, true);
         return;
     case STMT_RETURN:
-        RTS(NULL);
+        RTS();
         return;
     case STMT_STOP:
         REM(strcopy("TODO: handle STMT_STOP"));

@@ -124,7 +124,7 @@ void LDY(char *operand) { addCode(NULL, OP_LDY, operand); }
 void PHA(void) { addCode(NULL, OP_PHA, NULL); }
 void PLA(void) { addCode(NULL, OP_PLA, NULL); }
 void REM(char *comment) { code = code->next = Instruction(NULL, NULL, NULL, NULL, comment); }
-void RTS(const char *label) { addCode(label, "RTS", NULL); }
+void RTS(void) { addCode(NULL, "RTS", NULL); }
 void SBC(char *operand) { addCode(NULL, OP_SBC, operand); }
 void SEC(void) { addCode(NULL, OP_SEC, NULL); }
 void STA(char *operand) { addCode(NULL, OP_STA, operand); }

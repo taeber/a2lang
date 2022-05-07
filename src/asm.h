@@ -7,7 +7,7 @@
 // 6502 mneumonics
 void JMP(char *location);
 void JSR(char *name);
-void RTS(const char *label);
+void RTS(void);
 
 typedef void (*Branch)(char *);
 void BEQ(char *label);
