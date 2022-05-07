@@ -22,12 +22,12 @@ Println._1	LDA (Println.txt),Y
 	INY
 	JMP Println._0
 Println._2	JSR CROUT
-Println._end	RTS
+	RTS
 PrintAt.txt	EQU $06
 * COPYBB CH @A
 PrintAt	STA CH
 	JSR Println
-PrintAt._end	RTS
+	RTS
 main	JSR INIT
 	JSR HOME
 	LDA #<A2_3
@@ -37,7 +37,7 @@ main	JSR INIT
 * COPYBB @A #$0D
 	LDA #$0D
 	JSR PrintAt
-main._end	RTS
+	RTS
 Println.ch	HEX 00
 A2_3	ASC "Hello, 1979!"
 	HEX 00

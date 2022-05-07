@@ -16,7 +16,7 @@ swap1	LDA SRC
 	LDX SRC+1
 	STA DST
 	STX DST+1
-swap1._end	RTS
+	RTS
 main	JSR INIT
 	JSR HOME
 	LDA #<A2_0
@@ -55,7 +55,7 @@ main.world	EQU DST
 	LDA (main.world),Y
 	JSR COUT
 	JSR CROUT
-main._end	RTS
+	RTS
 A2_0	ASC "HELLO"
 	HEX 00
 A2_1	ASC "WORLD"

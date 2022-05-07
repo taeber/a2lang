@@ -14,16 +14,14 @@ HT	EQU $09
 * TODO: handle VAL_IDENT
 DEL	EQU $7F
 LOWERA	EQU "a"
-PrintChar._end	RTS
+PrintChar	RTS
 Printa.ch	EQU "a"
-Printa._end	RTS
+	RTS
 PrintB.ch	EQU "B"
-PrintB._end	RTS
-Printc._end	RTS
-PrintChar	EQU PrintChar._end
+	RTS
+Printc	RTS
 Printa	EQU Printa.ch
 PrintB	EQU PrintB.ch
-Printc	EQU Printc._end
 Output.len	HEX 00
 strings	ASC "We call them text literals"
 	HEX 00

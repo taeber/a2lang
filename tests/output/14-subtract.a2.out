@@ -55,7 +55,7 @@ Assert._2	LDA #"<"
 	JSR COUT
 	JSR CROUT
 	JSR EXIT
-Assert._end	RTS
+	RTS
 * COPYBB TestSimple.value #$00
 TestSimple	LDA #$00
 	STA TestSimple.value
@@ -105,7 +105,7 @@ TestSimple	LDA #$00
 	LDA #$03
 	STA Assert.expected
 	JSR Assert
-TestSimple._end	RTS
+	RTS
 * SUBBB TestSimpleRHS.values+$02 #$2A
 TestSimpleRHS	LDA #$2A
 	SEC
@@ -119,12 +119,12 @@ TestSimpleRHS	LDA #$2A
 	STA Assert.expected
 * WARNING: VALUE TRUNCATED
 	JSR Assert
-TestSimpleRHS._end	RTS
+	RTS
 main	JSR INIT
 	JSR HOME
 	JSR TestSimple
 	JSR TestSimpleRHS
-main._end	RTS
+	RTS
 Assert.actual	HEX 00
 Assert.expected	HEX 00
 TestSimple.value	HEX 00

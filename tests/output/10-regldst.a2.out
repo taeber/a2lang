@@ -13,4 +13,4 @@ main	JSR INIT
 	LDY #$BE
 	JSR PRNTYX
 	JSR CROUT
-main._end	RTS
+	RTS

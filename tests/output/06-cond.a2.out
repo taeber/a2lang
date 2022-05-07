@@ -54,12 +54,11 @@ Check._16	RTS
 Check._17	LDA #TRUE
 	STA Check.is
 	RTS
-Check._end	RTS
+Check._14	RTS
 Check._2	EQU Check._3
 Check._5	EQU Check._6
 Check._7	EQU Check._9
 Check._8	EQU Check._12
 Check._13	EQU Check._15
-Check._14	EQU Check._end
 Check.val	HEX 00
 Check.is	HEX 00

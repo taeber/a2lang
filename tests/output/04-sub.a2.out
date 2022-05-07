@@ -16,6 +16,6 @@ Output3	LDY #$00
 	LDA #$03
 	STA Output3.len
 	RTS
-Output3._end	RTS
+	RTS
 Characters	HEX 00000000
 Output3.len	HEX 00

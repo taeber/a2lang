@@ -231,9 +231,7 @@ void defineSubroutine(const struct String *name, const struct Subroutine *subr)
     }
     Label(subname);
     generateBlock(&subr->block);
-    char *end = stringf("%s._end", subname);
-    RTS(end);
-    free(end);
+    RTS(NULL);
     free(subname);
 
     subroutine.name = NULL;

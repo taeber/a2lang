@@ -12,4 +12,4 @@ main	JSR INIT
 * COPYBB @A #"."
 	LDA #"."
 	JSR COUT
-main._end	RTS
+	RTS

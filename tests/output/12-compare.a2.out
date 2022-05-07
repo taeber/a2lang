@@ -24,7 +24,7 @@ Println._1	LDA (Println.msg),Y
 	INY
 	JMP Println._0
 Println._2	JSR CROUT
-Println._end	RTS
+	RTS
 main	JSR INIT
 	JSR HOME
 * COPYBB main.i #$15
@@ -85,7 +85,7 @@ main._17	LDA #<A2_19
 	STX Println.msg+1
 	STA Println.msg
 	JSR Println
-main._end	RTS
+	RTS
 main._9	EQU main._11
 main.i	HEX 00
 A2_6	ASC "21 < 23"

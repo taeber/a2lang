@@ -55,7 +55,7 @@ Assert._2	LDA #"<"
 	JSR COUT
 	JSR CROUT
 	JSR EXIT
-Assert._end	RTS
+	RTS
 main	JSR INIT
 	JSR HOME
 * COPYBB main.value #$2A
@@ -171,7 +171,7 @@ main	JSR INIT
 	LDA #$05
 	STA Assert.expected
 	JSR Assert
-main._end	RTS
+	RTS
 Assert.actual	HEX 00
 Assert.expected	HEX 00
 main.value	HEX 00

@@ -23,7 +23,7 @@ Println._1	LDA (Println.txt),Y
 	INY
 	JMP Println._0
 Println._2	JSR CROUT
-Println._end	RTS
+	RTS
 PRTLN.txt	EQU $06
 main	JSR INIT
 	JSR HOME
@@ -37,7 +37,7 @@ main	JSR INIT
 	STX PRTLN.txt+1
 	STA PRTLN.txt
 	JSR PRTLN
-main._end	RTS
+	RTS
 PRTLN	LDY #0
 .loop	LDA (.txt),Y
 	BEQ .done
