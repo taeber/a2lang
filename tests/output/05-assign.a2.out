@@ -66,9 +66,9 @@ A2_3	LDA i
 	BCC A2_4
 	JMP A2_5
 * ADDBB i #$01
-A2_4	LDA #$01
+A2_4	LDA i
 	CLC
-	ADC i
+	ADC #$01
 	STA i
 	JMP A2_3
 * IFLT #$00 i
@@ -78,9 +78,9 @@ A2_5	LDA #$00
 	BCC A2_6
 	JMP A2_7
 * SUBBB i #NUMPEEPS
-A2_6	LDA #NUMPEEPS
+A2_6	LDA i
 	SEC
-	SBC i
+	SBC #NUMPEEPS
 	STA i
 	JMP A2_5
 false	EQU $00

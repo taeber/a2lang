@@ -67,9 +67,9 @@ main	JSR INIT
 	STA Assert.expected
 	JSR Assert
 * SUBBB main.value #ANSWER
-	LDA #ANSWER
+	LDA main.value
 	SEC
-	SBC main.value
+	SBC #ANSWER
 	STA main.value
 * COPYBB Assert.actual main.value
 	LDA main.value
@@ -79,9 +79,9 @@ main	JSR INIT
 	STA Assert.expected
 	JSR Assert
 * ADDBB main.value #$17
-	LDA #$17
+	LDA main.value
 	CLC
-	ADC main.value
+	ADC #$17
 	STA main.value
 * COPYBB Assert.actual main.value
 	LDA main.value
@@ -94,9 +94,9 @@ main	JSR INIT
 	LDA #$00
 	STA main.value
 * SUBBB main.value #$2A
-	LDA #$2A
+	LDA main.value
 	SEC
-	SBC main.value
+	SBC #$2A
 	STA main.value
 * COPYBB Assert.actual main.value
 	LDA main.value
@@ -110,9 +110,9 @@ main	JSR INIT
 	LDA #$FF
 	STA main.value
 * ADDBB main.value #$01
-	LDA #$01
+	LDA main.value
 	CLC
-	ADC main.value
+	ADC #$01
 	STA main.value
 * COPYBB Assert.actual main.value
 	LDA main.value
@@ -125,9 +125,9 @@ main	JSR INIT
 	LDA #$00
 	STA main.value
 * SUBBB main.value #$01
-	LDA #$01
+	LDA main.value
 	SEC
-	SBC main.value
+	SBC #$01
 	STA main.value
 * COPYBB Assert.actual main.value
 	LDA main.value
@@ -143,9 +143,9 @@ main	JSR INIT
 	LDA #$04
 	STA main.other
 * SUBBB main.value main.other
-	LDA main.other
+	LDA main.value
 	SEC
-	SBC main.value
+	SBC main.other
 	STA main.value
 * COPYBB Assert.actual main.value
 	LDA main.value
@@ -158,9 +158,9 @@ main	JSR INIT
 	LDA #$09
 	STA main.values+$02
 * SUBBB main.values+$02 main.other
-	LDA main.other
+	LDA main.values+$02
 	SEC
-	SBC main.values+$02
+	SBC main.other
 	STA main.values+$02
 * COPYBB Assert.actual main.values+$02
 	LDA main.values+$02

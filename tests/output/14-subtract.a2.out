@@ -58,9 +58,9 @@ Assert._2	LDA #"<"
 TestSimple	LDA #$00
 	STA TestSimple.value
 * SUBBB TestSimple.value #$2A
-	LDA #$2A
+	LDA TestSimple.value
 	SEC
-	SBC TestSimple.value
+	SBC #$2A
 	STA TestSimple.value
 * COPYBB Assert.actual TestSimple.value
 	LDA TestSimple.value
@@ -74,9 +74,9 @@ TestSimple	LDA #$00
 	LDA #$2A
 	STA TestSimple.value
 * SUBBB TestSimple.value #ANSWER
-	LDA #ANSWER
+	LDA TestSimple.value
 	SEC
-	SBC TestSimple.value
+	SBC #ANSWER
 	STA TestSimple.value
 * COPYBB Assert.actual TestSimple.value
 	LDA TestSimple.value
@@ -92,9 +92,9 @@ TestSimple	LDA #$00
 	LDA #$01
 	STA TestSimple.other
 * SUBBB TestSimple.value TestSimple.other
-	LDA TestSimple.other
+	LDA TestSimple.value
 	SEC
-	SBC TestSimple.value
+	SBC TestSimple.other
 	STA TestSimple.value
 * COPYBB Assert.actual TestSimple.value
 	LDA TestSimple.value
@@ -104,9 +104,9 @@ TestSimple	LDA #$00
 	STA Assert.expected
 	JMP Assert
 * SUBBB TestSimpleRHS.values+$02 #$2A
-TestSimpleRHS	LDA #$2A
+TestSimpleRHS	LDA TestSimpleRHS.values+$02
 	SEC
-	SBC TestSimpleRHS.values+$02
+	SBC #$2A
 	STA TestSimpleRHS.values+$02
 * COPYBB Assert.actual TestSimpleRHS.values+$02
 	LDA TestSimpleRHS.values+$02

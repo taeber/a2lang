@@ -498,9 +498,9 @@ static void MATHBB(const struct Arithmetic *op, const struct Operand *dst, const
     REM(mathMacroString(op, "BB", dst, src));
 
     if (dst->mode != MODE_REGISTER) {
-        loadByte('A', src);
+        loadByte('A', dst);
         op->ClearFlag();
-        op->Operation(dst);
+        op->Operation(src);
         storeByte(dst);
         return;
     }
@@ -558,13 +558,13 @@ static void MATHWB(const struct Arithmetic *op, const struct Operand *dst, const
     REM(mathMacroString(op, "WB", dst, src));
 
     op->ClearFlag();
-    loadByte('A', src);
-    op->Operation(dst);
+    loadByte('A', dst);
+    op->Operation(src);
     storeByte(dst);
 
     struct Operand *msb = highByte(dst);
-    loadByte('A', &ZEROB);
-    op->Operation(msb);
+    loadByte('A', msb);
+    op->Operation(&ZEROB);
     storeByte(msb);
 
     FreeOperand(msb);
@@ -575,14 +575,14 @@ static void MATHWW(const struct Arithmetic *op, const struct Operand *dst, const
     REM(mathMacroString(op, "WW", dst, src));
 
     op->ClearFlag();
-    loadByte('A', src);
-    op->Operation(dst);
+    loadByte('A', dst);
+    op->Operation(src);
     storeByte(dst);
 
     struct Operand *dstmsb = highByte(dst),
                    *srcmsb = highByte(src);
-    loadByte('A', srcmsb);
-    op->Operation(dstmsb);
+    loadByte('A', dstmsb);
+    op->Operation(srcmsb);
     storeByte(dstmsb);
 
     FreeOperand(srcmsb);

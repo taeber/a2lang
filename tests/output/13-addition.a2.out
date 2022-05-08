@@ -98,9 +98,9 @@ AssertW._5	LDA #"<"
 TestSimple	LDA #$00
 	STA TestSimple.value
 * ADDBB TestSimple.value #$2A
-	LDA #$2A
+	LDA TestSimple.value
 	CLC
-	ADC TestSimple.value
+	ADC #$2A
 	STA TestSimple.value
 * COPYBB Assert.actual TestSimple.value
 	LDA TestSimple.value
@@ -113,9 +113,9 @@ TestSimple	LDA #$00
 	LDA #$00
 	STA TestSimple.value
 * ADDBB TestSimple.value #ANSWER
-	LDA #ANSWER
+	LDA TestSimple.value
 	CLC
-	ADC TestSimple.value
+	ADC #ANSWER
 	STA TestSimple.value
 * COPYBB Assert.actual TestSimple.value
 	LDA TestSimple.value
@@ -131,9 +131,9 @@ TestSimple	LDA #$00
 	LDA #$02
 	STA TestSimple.other
 * ADDBB TestSimple.value TestSimple.other
-	LDA TestSimple.other
+	LDA TestSimple.value
 	CLC
-	ADC TestSimple.value
+	ADC TestSimple.other
 	STA TestSimple.value
 * COPYBB Assert.actual TestSimple.value
 	LDA TestSimple.value
@@ -149,11 +149,11 @@ TestWord	LDA #$FA
 	STX TestWord.large+1
 * ADDWB TestWord.large #$FA
 	CLC
-	LDA #$FA
-	ADC TestWord.large
+	LDA TestWord.large
+	ADC #$FA
 	STA TestWord.large
-	LDA #0
-	ADC TestWord.large+1
+	LDA TestWord.large+1
+	ADC #0
 	STA TestWord.large+1
 * COPYWW AssertW.actual TestWord.large
 	LDA TestWord.large
