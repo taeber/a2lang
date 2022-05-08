@@ -20,8 +20,7 @@ Println._1	LDA (Println.txt),Y
 * ADDBB @Y #$01
 	INY
 	JMP Println._0
-Println._2	JSR CROUT
-	RTS
+Println._2	JMP CROUT
 PrintAt.txt	EQU $06
 * COPYBB CH @A
 PrintAt	STA CH

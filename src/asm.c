@@ -190,7 +190,7 @@ void Optimize(void)
         if (succ) {
             // JSR + RTS => JMP
             if (curr->op == OP_JSR && succ->op == OP_RTS) {
-                if (!*curr->label && !*succ->label) {
+                if (!*succ->label) {
                     curr->op   = OP_JMP;
                     removeNextInstruction(curr);
                     succ = curr->next;
