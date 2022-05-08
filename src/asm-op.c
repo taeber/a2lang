@@ -139,7 +139,7 @@ static void loadAddr(const struct Operand *src)
         LDX(stringf("#>%s", src->base));
         CLC();
         ADC(stringf("%s", src->offset));
-        BCC(immediate(strcopy("1"))); // skip INX
+        BCC(strcopy("*+2+1")); // skip INX
         INX();
         return;
     }
@@ -149,7 +149,7 @@ static void loadAddr(const struct Operand *src)
         LDX(stringf(">%s", src->base));
         CLC();
         ADC(stringf("%s", src->offset));
-        BCC(immediate(strcopy("1"))); // skip INX
+        BCC(strcopy("*+2+1")); // skip INX
         INX();
         return;
     case MODE_IMMEDIATE:
