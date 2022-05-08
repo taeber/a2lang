@@ -45,6 +45,7 @@ static Operation OP_ADC = "ADC",
                  OP_LDA = "LDA",
                  OP_LDX = "LDX",
                  OP_LDY = "LDY",
+                 OP_NOP = "NOP",
                  OP_PHA = "PHA",
                  OP_PLA = "PLA",
                  OP_SBC = "SBC",
@@ -59,6 +60,8 @@ static Operation OP_ADC = "ADC",
 
 static struct Instruction  codeHead;
 static struct Instruction *code = &codeHead;
+
+static char unusedLabel[256] = { 0 };
 
 static struct Instruction dataHead;
 static struct Instruction *data = &dataHead;
@@ -77,7 +80,7 @@ static struct Instruction *Instruction(
         strncpy(instruction->label, label, sizeof instruction->label);
     }
 
-    instruction->op    = op;
+    instruction->op = op;
 
     if (operand) {
         strncpy(instruction->operand, operand, sizeof instruction->operand);
@@ -94,12 +97,28 @@ static struct Instruction *Instruction(
 
 static void addCode(const char *label, const char *op, char *operand)
 {
-    code = code->next = Instruction(label, op, operand, NULL, NULL);
+    if (unusedLabel[0] == '\0') {
+        code = code->next = Instruction(label, op, operand, NULL, NULL);
+        return;
+    }
+    code = code->next = Instruction(unusedLabel, op, operand, NULL, NULL);
+    if (label) {
+        EQU(label, strcopy(unusedLabel));
+    }
+    unusedLabel[0] = '\0';
 }
 
 void ADC(char *operand) { addCode(NULL, OP_ADC, operand); }
 void ASL(void) { addCode(NULL, OP_ASL, NULL); }
-void ASM(char *assembly) { code = code->next = Instruction(NULL, NULL, NULL, assembly, NULL); }
+
+void ASM(char *assembly)
+{
+    if (unusedLabel[0] != '\0') {
+        code = code->next = Instruction(unusedLabel, OP_NOP, NULL, NULL, NULL);
+    }
+    code = code->next = Instruction(NULL, NULL, NULL, assembly, NULL);
+}
+
 void BCC(char *operand) { addCode(NULL, OP_BCC, operand); }
 void BCS(char *operand) { addCode(NULL, OP_BCS, operand); }
 void BEQ(char *operand) { addCode(NULL, OP_BEQ, operand); }
@@ -111,16 +130,34 @@ void CPY(char *operand) { addCode(NULL, OP_CPY, operand); }
 void DEC(char *operand) { addCode(NULL, OP_DEC, operand); }
 void DEX(void) { addCode(NULL, OP_DEX, NULL); }
 void DEY(void) { addCode(NULL, OP_DEY, NULL); }
-void EQU(const char *name, char *operand) { addCode(name, OP_EQU, operand); }
+void EQU(const char *name, char *operand)
+{
+    code = code->next = Instruction(name, OP_EQU, operand, NULL, NULL);
+}
 void INC(char *operand) { addCode(NULL, OP_INC, operand); }
 void INX(void) { addCode(NULL, OP_INX, NULL); }
 void INY(void) { addCode(NULL, OP_INY, NULL); }
 void JMP(char *location) { addCode(NULL, OP_JMP, location); }
 void JSR(char *name) { addCode(NULL, OP_JSR, name); }
-void Label(const char *label) { addCode(label, NULL, NULL); }
+void Label(const char *label)
+{
+    if (unusedLabel[0] != '\0') {
+        EQU(label, strcopy(unusedLabel));
+        return;
+    }
+    strncpy(unusedLabel, label, sizeof unusedLabel);
+}
 void LDA(char *operand) { addCode(NULL, OP_LDA, operand); }
 void LDX(char *operand) { addCode(NULL, OP_LDX, operand); }
 void LDY(char *operand) { addCode(NULL, OP_LDY, operand); }
+
+void Optimize(void)
+{
+    if (unusedLabel[0] != '\0') {
+        code = code->next = Instruction(unusedLabel, OP_NOP, NULL, NULL, NULL);
+    }
+}
+
 void PHA(void) { addCode(NULL, OP_PHA, NULL); }
 void PLA(void) { addCode(NULL, OP_PLA, NULL); }
 void REM(char *comment) { code = code->next = Instruction(NULL, NULL, NULL, NULL, comment); }
@@ -148,13 +185,7 @@ void TXT(const char *name, const char *text)
     data = data->next = Instruction(NULL, OP_HEX, strcopy("00"), NULL, NULL);
 }
 
-const char *UnusedLabel(void)
-{
-    if (code->label[0] != '\0' && code->op == NULL) {
-        return code->label;
-    }
-    return NULL;
-}
+char *UnusedLabel(void) { return unusedLabel[0] != '\0' ? strcopy(unusedLabel) : NULL; }
 
 void VAR(const char *name, uint16_t size)
 {
@@ -169,55 +200,32 @@ void VAR(const char *name, uint16_t size)
     data = data->next = Instruction(name, OP_HEX, stringf("%.*x", zeros, 0), NULL, NULL);
 }
 
-static const char *WriteInstruction(FILE *fp, struct Instruction *p, const char *label)
+static void WriteInstruction(FILE *fp, struct Instruction *p)
 {
     // Inline assembly or comment
     if (p->assembly) {
         fputs(p->assembly, fp);
-        return label;
+        return;
     }
 
     if (p->comment) {
         fprintf(fp, "* %s\n", p->comment);
-        return label;
+        return;
     }
 
-    if (label && p->label[0] != '\0') {
-        EQU(label, strcopy(p->label));
-        return WriteInstruction(fp, p, NULL);
-    }
-
-    if (p->label[0] != '\0' && !p->op) {
-        return p->label;
-    }
-
-    if (!label) {
-        label = p->label;
-    }
-
-    fprintf(fp, "%s\t%s", label ? label : "", p->op);
+    fprintf(fp, "%s\t%s", p->label, p->op);
     if (p->operand[0] != '\0') {
         fprintf(fp, " %s", p->operand);
     }
     fputc('\n', fp);
-    return NULL;
 }
 
 void WriteInstructions(FILE *fp)
 {
-    const char *label = NULL;
     for (struct Instruction *p = codeHead.next; p; p = p->next) {
-        label = WriteInstruction(fp, p, label);
-    }
-    if (label) {
-        fprintf(fp, "%s\tNOP\n", label);
-        label = NULL;
+        WriteInstruction(fp, p);
     }
     for (struct Instruction *p = dataHead.next; p; p = p->next) {
-        label = WriteInstruction(fp, p, label);
-    }
-    if (label) {
-        fprintf(fp, "%s\tHEX 00\n", label);
-        label = NULL;
+        WriteInstruction(fp, p);
     }
 }

@@ -88,7 +88,7 @@ A2_6	LDA #NUMPEEPS
 false	EQU $00
 true	EQU $01
 * COPYBB done #false
-	LDA #false
+A2_7	LDA #false
 	STA done
 * TODO: handle STMT_ASSIGN for !=
 * COPYBB done #true
@@ -100,7 +100,6 @@ true	EQU $01
 * TODO: handle STMT_ASSIGN for |=
 * TODO: handle STMT_ASSIGN for &=
 * TODO: handle STMT_ASSIGN for ~=
-A2_7	EQU false
 Assert.actual	HEX 00
 Assert.expected	HEX 00
 i	HEX 00

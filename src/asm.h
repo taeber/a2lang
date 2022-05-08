@@ -64,8 +64,11 @@ void EQU(const char *name, char *operand);
 
 // Add a label.
 void Label(const char *label);
-// Returns the label that was last added only if it doesn't have instructions.
-const char *UnusedLabel(void);
+// Returns a copy of the label that was last added only if it doesn't have instructions.
+char *UnusedLabel(void);
+
+// Run the Asembly-level optimizer
+void Optimize(void);
 
 // Write all the instructions out to fp.
 void WriteInstructions(FILE *fp);

@@ -460,11 +460,8 @@ void generateConditional(const struct Conditional *cond, bool isLoop)
         [COMP_GREATEREQUAL] = IFGE,
     };
 
-    const char *unused = UnusedLabel();
-    char *lblLoop;
-    if (unused) {
-        lblLoop = strcopy(unused);
-    } else {
+    char *lblLoop = UnusedLabel();
+    if (!lblLoop) {
         lblLoop = MakeLocalLabel(subroutineName());
         Label(lblLoop);
     }
@@ -925,6 +922,8 @@ void Generate(FILE *fp, struct Program *program)
     InitializeSymbols();
 
     generateBlock(&program->block);
+
+    Optimize();
 
     WriteInstructions(fp);
 }

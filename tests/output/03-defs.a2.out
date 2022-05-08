@@ -16,12 +16,10 @@ DEL	EQU $7F
 LOWERA	EQU "a"
 PrintChar	RTS
 Printa.ch	EQU "a"
-	RTS
+Printa	RTS
 PrintB.ch	EQU "B"
-	RTS
+PrintB	RTS
 Printc	RTS
-Printa	EQU Printa.ch
-PrintB	EQU PrintB.ch
 Output.len	HEX 00
 strings	ASC "We call them text literals"
 	HEX 00
