@@ -26,8 +26,7 @@ Assert._1	LDA #"="
 * COPYBB @A Assert.actual
 	LDA Assert.actual
 	JSR PRBYTE
-	JSR CROUT
-	RTS
+	JMP CROUT
 * COPYBB @A #"<"
 Assert._2	LDA #"<"
 	JSR COUT
@@ -54,8 +53,7 @@ Assert._2	LDA #"<"
 	LDA #"!"
 	JSR COUT
 	JSR CROUT
-	JSR EXIT
-	RTS
+	JMP EXIT
 main	JSR INIT
 	JSR HOME
 * COPYBB main.value #$2A
@@ -170,8 +168,7 @@ main	JSR INIT
 * COPYBB Assert.expected #$05
 	LDA #$05
 	STA Assert.expected
-	JSR Assert
-	RTS
+	JMP Assert
 Assert.actual	HEX 00
 Assert.expected	HEX 00
 main.value	HEX 00

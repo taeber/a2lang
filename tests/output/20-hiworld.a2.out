@@ -11,5 +11,4 @@ main	JSR INIT
 	JSR COUT
 * COPYBB @A #"."
 	LDA #"."
-	JSR COUT
-	RTS
+	JMP COUT

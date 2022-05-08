@@ -35,8 +35,7 @@ main	JSR INIT
 	LDX #>A2_4
 	STX PRTLN.txt+1
 	STA PRTLN.txt
-	JSR PRTLN
-	RTS
+	JMP PRTLN
 PRTLN	LDY #0
 .loop	LDA (.txt),Y
 	BEQ .done

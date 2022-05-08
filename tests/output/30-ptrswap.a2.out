@@ -54,8 +54,7 @@ main.world	EQU DST
 	LDY #$04
 	LDA (main.world),Y
 	JSR COUT
-	JSR CROUT
-	RTS
+	JMP CROUT
 A2_0	ASC "HELLO"
 	HEX 00
 A2_1	ASC "WORLD"

@@ -83,8 +83,7 @@ main._16	LDA #<A2_18
 	LDX #>A2_18
 	STX Println.msg+1
 	STA Println.msg
-	JSR Println
-	RTS
+	JMP Println
 main.i	HEX 00
 A2_6	ASC "21 < 23"
 	HEX 00

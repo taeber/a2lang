@@ -24,8 +24,7 @@ Fail	LDA #"F"
 	LDA #"!"
 	JSR COUT
 	JSR CROUT
-	JSR EXIT
-	RTS
+	JMP EXIT
 PRWORD	JSR PRBYTE
 	TXA
 	JMP PRBYTE
@@ -47,8 +46,7 @@ Assert._1	LDA #"="
 * COPYBB @A Assert.actual
 	LDA Assert.actual
 	JSR PRBYTE
-	JSR CROUT
-	RTS
+	JMP CROUT
 * COPYBB @A #"<"
 Assert._2	LDA #"<"
 	JSR COUT
@@ -59,8 +57,7 @@ Assert._2	LDA #"<"
 	LDA Assert.actual
 	JSR PRBYTE
 	JSR CROUT
-	JSR Fail
-	RTS
+	JMP Fail
 * COPYWW @AX AssertW.expected
 AssertW	LDX AssertW.expected
 	LDA AssertW.expected+1
@@ -84,8 +81,7 @@ AssertW._4	LDA #"="
 	LDX AssertW.actual
 	LDA AssertW.actual+1
 	JSR PRWORD
-	JSR CROUT
-	RTS
+	JMP CROUT
 * COPYBB @A #"<"
 AssertW._5	LDA #"<"
 	JSR COUT
@@ -97,8 +93,7 @@ AssertW._5	LDA #"<"
 	LDA AssertW.actual+1
 	JSR PRWORD
 	JSR CROUT
-	JSR Fail
-	RTS
+	JMP Fail
 * COPYBB TestSimple.value #$00
 TestSimple	LDA #$00
 	STA TestSimple.value
@@ -146,8 +141,7 @@ TestSimple	LDA #$00
 * COPYBB Assert.expected #$03
 	LDA #$03
 	STA Assert.expected
-	JSR Assert
-	RTS
+	JMP Assert
 * COPYWB TestWord.large #$FA
 TestWord	LDA #$FA
 	LDX #0
@@ -190,13 +184,11 @@ TestWord	LDA #$FA
 	LDX #$03
 	STA AssertW.expected
 	STX AssertW.expected+1
-	JSR AssertW
-	RTS
+	JMP AssertW
 main	JSR INIT
 	JSR HOME
 	JSR TestSimple
-	JSR TestWord
-	RTS
+	JMP TestWord
 Assert.actual	HEX 00
 Assert.expected	HEX 00
 AssertW.actual	HEX 0000

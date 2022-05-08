@@ -26,8 +26,7 @@ Assert._1	LDA #"="
 * COPYBB @A Assert.actual
 	LDA Assert.actual
 	JSR PRBYTE
-	JSR CROUT
-	RTS
+	JMP CROUT
 * COPYBB @A #"<"
 Assert._2	LDA #"<"
 	JSR COUT
@@ -54,8 +53,7 @@ Assert._2	LDA #"<"
 	LDA #"!"
 	JSR COUT
 	JSR CROUT
-	JSR EXIT
-	RTS
+	JMP EXIT
 * COPYBB TestSimple.value #$00
 TestSimple	LDA #$00
 	STA TestSimple.value
@@ -104,8 +102,7 @@ TestSimple	LDA #$00
 * COPYBB Assert.expected #$03
 	LDA #$03
 	STA Assert.expected
-	JSR Assert
-	RTS
+	JMP Assert
 * SUBBB TestSimpleRHS.values+$02 #$2A
 TestSimpleRHS	LDA #$2A
 	SEC
@@ -118,13 +115,11 @@ TestSimpleRHS	LDA #$2A
 	LDA #$D6
 	STA Assert.expected
 * WARNING: VALUE TRUNCATED
-	JSR Assert
-	RTS
+	JMP Assert
 main	JSR INIT
 	JSR HOME
 	JSR TestSimple
-	JSR TestSimpleRHS
-	RTS
+	JMP TestSimpleRHS
 Assert.actual	HEX 00
 Assert.expected	HEX 00
 TestSimple.value	HEX 00

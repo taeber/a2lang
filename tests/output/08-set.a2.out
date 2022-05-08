@@ -25,8 +25,7 @@ Assert._1	LDA #"="
 * COPYBB @A Assert.actual
 	LDA Assert.actual
 	JSR PRBYTE
-	JSR CROUT
-	RTS
+	JMP CROUT
 * COPYBB @A #"<"
 Assert._2	LDA #"<"
 	JSR COUT
@@ -53,8 +52,7 @@ Assert._2	LDA #"<"
 	LDA #"!"
 	JSR COUT
 	JSR CROUT
-	JSR EXIT
-	RTS
+	JMP EXIT
 PTR1	EQU $06
 PTR2	EQU $08
 PTR3	EQU $FE

@@ -48,6 +48,7 @@ static Operation OP_ADC = "ADC",
                  OP_NOP = "NOP",
                  OP_PHA = "PHA",
                  OP_PLA = "PLA",
+                 OP_RTS = "RTS",
                  OP_SBC = "SBC",
                  OP_SEC = "SEC",
                  OP_STA = "STA",
@@ -93,6 +94,19 @@ static struct Instruction *Instruction(
     instruction->next = NULL;
 
     return instruction;
+}
+
+static void FreeInstruction(struct Instruction *instruction)
+{
+    if (instruction->assembly) {
+        free(instruction->assembly);
+        instruction->assembly = NULL;
+    }
+    if (instruction->comment) {
+        free(instruction->comment);
+        instruction->comment = NULL;
+    }
+    instruction->next = NULL;
 }
 
 static void addCode(const char *label, const char *op, char *operand)
@@ -153,15 +167,39 @@ void LDY(char *operand) { addCode(NULL, OP_LDY, operand); }
 
 void Optimize(void)
 {
+    // Associates the remaining unusedLabel with a NOP. This is not really an
+    // optimization; rather, it's required for proper execution of the code.
     if (unusedLabel[0] != '\0') {
         code = code->next = Instruction(unusedLabel, OP_NOP, NULL, NULL, NULL);
+        unusedLabel[0] = '\0';
+    }
+
+    struct Instruction *pred = NULL, *curr = NULL, *succ = NULL;
+
+    curr = codeHead.next;
+    while (curr) {
+        succ = curr->next;
+
+        if (succ) {
+            if (!*curr->label && curr->op == OP_JSR
+                && !*succ->label && succ->op == OP_RTS) {
+                // JSR + RTS => JMP
+                curr->op = OP_JMP;
+                curr->next = succ->next;
+                FreeInstruction(succ);
+                succ = curr->next;
+            }
+        }
+
+        pred = curr;
+        curr = succ;
     }
 }
 
 void PHA(void) { addCode(NULL, OP_PHA, NULL); }
 void PLA(void) { addCode(NULL, OP_PLA, NULL); }
 void REM(char *comment) { code = code->next = Instruction(NULL, NULL, NULL, NULL, comment); }
-void RTS(void) { addCode(NULL, "RTS", NULL); }
+void RTS(void) { addCode(NULL, OP_RTS, NULL); }
 void SBC(char *operand) { addCode(NULL, OP_SBC, operand); }
 void SEC(void) { addCode(NULL, OP_SEC, NULL); }
 void STA(char *operand) { addCode(NULL, OP_STA, operand); }
