@@ -19,7 +19,7 @@ Printa.ch	EQU "a"
 Printa	RTS
 PrintB.ch	EQU "B"
 PrintB	RTS
-Printc	RTS
+Printc	EQU PrintB
 Output.len	HEX 00
 strings	ASC "We call them text literals"
 	HEX 00

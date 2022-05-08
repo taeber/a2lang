@@ -66,10 +66,8 @@ ptrg	EQU PTR3
 OutputOne	LDA #$01
 	STA OutputOne.one
 	RTS
-	RTS
 * COPYBB @A #"A"
 OutputRegA	LDA #"A"
-	RTS
 	RTS
 main	JSR OutputRegA
 * COPYBB varb @A

@@ -96,7 +96,7 @@ static struct Instruction *Instruction(
     return instruction;
 }
 
-static void FreeInstruction(struct Instruction *instruction)
+static void freeInstruction(struct Instruction *instruction)
 {
     if (instruction->assembly) {
         free(instruction->assembly);
@@ -107,6 +107,13 @@ static void FreeInstruction(struct Instruction *instruction)
         instruction->comment = NULL;
     }
     instruction->next = NULL;
+}
+
+static void removeNextInstruction(struct Instruction *instruction)
+{
+    struct Instruction *removed = instruction->next;
+    instruction->next           = removed->next;
+    freeInstruction(removed);
 }
 
 static void addCode(const char *label, const char *op, char *operand)
@@ -181,16 +188,45 @@ void Optimize(void)
         succ = curr->next;
 
         if (succ) {
-            if (!*curr->label && curr->op == OP_JSR
-                && !*succ->label && succ->op == OP_RTS) {
-                // JSR + RTS => JMP
-                curr->op = OP_JMP;
-                curr->next = succ->next;
-                FreeInstruction(succ);
-                succ = curr->next;
+            // JSR + RTS => JMP
+            if (curr->op == OP_JSR && succ->op == OP_RTS) {
+                if (!*curr->label && !*succ->label) {
+                    curr->op   = OP_JMP;
+                    removeNextInstruction(curr);
+                    succ = curr->next;
+                    goto next;
+                }
+            }
+
+            // RTS + RTS => RTS
+            if (curr->op == OP_RTS && succ->op == OP_RTS) {
+                if (*curr->label && *succ->label) {
+                    // L1 RTS  => L1 RTS
+                    // L2 RTS     L2 EQU L1
+                    succ->op = OP_EQU;
+                    strcpy(succ->operand, curr->label);
+                    goto next;
+                }
+
+                if (*succ->label) {
+                    //    RTS  => L2 RTS
+                    // L2 RTS
+                    removeNextInstruction(pred);
+                    curr = succ;
+                } else {
+                    // L1 RTS  => L1 RTS
+                    //    RTS
+                    // or
+                    //    RTS  =>    RTS
+                    //    RTS
+                    removeNextInstruction(curr);
+                }
+                // Repeat the check in case there's another RTS
+                continue;
             }
         }
 
+next:
         pred = curr;
         curr = succ;
     }

@@ -49,7 +49,6 @@ Check._11	RTS
 * COPYBB Check.is #TRUE
 Check._12	LDA #TRUE
 	STA Check.is
-	RTS
 Check._10	RTS
 Check.val	HEX 00
 Check.is	HEX 00
