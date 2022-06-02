@@ -88,16 +88,29 @@ true	EQU $01
 * COPYBB done #false
 A2_7	LDA #false
 	STA done
-* TODO: handle STMT_ASSIGN for !=
+* EORBB working done #%11111111,#%11111111
+	LDA done
+	EOR #%11111111
+	STA working
+* WARNING: VALUE TRUNCATED
 * COPYBB done #true
 	LDA #true
 	STA done
 * COPYBB flags #$00
 	LDA #$00
 	STA flags
-* TODO: handle STMT_ASSIGN for |=
-* TODO: handle STMT_ASSIGN for &=
-* TODO: handle STMT_ASSIGN for ~=
+* ORABB flags #$FF
+	LDA flags
+	ORA #$FF
+	STA flags
+* ANDBB flags #$AA
+	LDA flags
+	AND #$AA
+	STA flags
+* EORBB flags #$AA
+	LDA flags
+	EOR #$AA
+	STA flags
 Assert.actual	HEX 00
 Assert.expected	HEX 00
 i	HEX 00

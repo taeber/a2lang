@@ -70,5 +70,5 @@ var flags: byte
 flags := %00000000
 flags |= %11111111  ; ORA
 flags &= %10101010  ; AND
-flags ~= %10101010  ; EOR
+flags ^= %10101010  ; EOR
 

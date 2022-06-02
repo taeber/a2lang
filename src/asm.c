@@ -22,6 +22,7 @@ struct Instruction {
 };
 
 static Operation OP_ADC = "ADC",
+                 OP_AND = "AND",
                  OP_ASC = "ASC",
                  OP_ASL = "ASL",
                  OP_BCC = "BCC",
@@ -35,6 +36,7 @@ static Operation OP_ADC = "ADC",
                  OP_DEC = "DEC",
                  OP_DEX = "DEX",
                  OP_DEY = "DEY",
+                 OP_EOR = "EOR",
                  OP_EQU = "EQU",
                  OP_INC = "INC",
                  OP_INX = "INX",
@@ -46,6 +48,7 @@ static Operation OP_ADC = "ADC",
                  OP_LDX = "LDX",
                  OP_LDY = "LDY",
                  OP_NOP = "NOP",
+                 OP_ORA = "ORA",
                  OP_PHA = "PHA",
                  OP_PLA = "PLA",
                  OP_RTS = "RTS",
@@ -130,6 +133,7 @@ static void addCode(const char *label, const char *op, char *operand)
 }
 
 void ADC(char *operand) { addCode(NULL, OP_ADC, operand); }
+void AND(char *operand) { addCode(NULL, OP_AND, operand); }
 void ASL(void) { addCode(NULL, OP_ASL, NULL); }
 
 void ASM(char *assembly)
@@ -151,15 +155,19 @@ void CPY(char *operand) { addCode(NULL, OP_CPY, operand); }
 void DEC(char *operand) { addCode(NULL, OP_DEC, operand); }
 void DEX(void) { addCode(NULL, OP_DEX, NULL); }
 void DEY(void) { addCode(NULL, OP_DEY, NULL); }
+void EOR(char *operand) { addCode(NULL, OP_EOR, operand); }
+
 void EQU(const char *name, char *operand)
 {
     code = code->next = Instruction(name, OP_EQU, operand, NULL, NULL);
 }
+
 void INC(char *operand) { addCode(NULL, OP_INC, operand); }
 void INX(void) { addCode(NULL, OP_INX, NULL); }
 void INY(void) { addCode(NULL, OP_INY, NULL); }
 void JMP(char *location) { addCode(NULL, OP_JMP, location); }
 void JSR(char *name) { addCode(NULL, OP_JSR, name); }
+
 void Label(const char *label)
 {
     if (unusedLabel[0] != '\0') {
@@ -168,6 +176,7 @@ void Label(const char *label)
     }
     strncpy(unusedLabel, label, sizeof unusedLabel);
 }
+
 void LDA(char *operand) { addCode(NULL, OP_LDA, operand); }
 void LDX(char *operand) { addCode(NULL, OP_LDX, operand); }
 void LDY(char *operand) { addCode(NULL, OP_LDY, operand); }
@@ -232,6 +241,7 @@ next:
     }
 }
 
+void ORA(char *operand) { addCode(NULL, OP_ORA, operand); }
 void PHA(void) { addCode(NULL, OP_PHA, NULL); }
 void PLA(void) { addCode(NULL, OP_PLA, NULL); }
 void REM(char *comment) { code = code->next = Instruction(NULL, NULL, NULL, NULL, comment); }

@@ -35,6 +35,17 @@ static struct Operand ZEROB = {
     },
 };
 
+static struct Operand ONES = {
+    .mode   = MODE_IMMEDIATE,
+    .size   = 2,
+    .immlo  = "%11111111",
+    .immhi  = "%11111111",
+    .number = {
+        .valid = true,
+        .value = 0xFFFF,
+    },
+};
+
 static struct Operand *Operand(
     enum Mode   mode,
     uint8_t     size,
@@ -82,14 +93,29 @@ static char *operandString(const struct Operand *operand)
     return NULL;
 }
 
-static char *macroString(const char *macro, const struct Operand *dst, const struct Operand *src)
+static char *macroString(
+    const char           *macro,
+    const struct Operand *dst,
+    const struct Operand *left,
+    const struct Operand *right)
 {
-    char *lhs  = operandString(dst),
-         *rhs  = operandString(src);
-    char *repr = stringf("%s %s%s%s", macro, lhs, rhs ? " " : "", rhs ? rhs : "");
-    free(lhs);
-    if (rhs) {
-        free(rhs);
+    char *dstString  = operandString(dst),
+         *leftString  = operandString(left),
+         *rightString  = operandString(right);
+
+    char *repr = stringf("%s %s%s%s%s%s",
+        macro, dstString,
+        leftString && dst != left ? " " : "",
+        leftString && dst != left ? leftString : "",
+        rightString ? " " : "",
+        rightString ? rightString : "");
+
+    free(dstString);
+    if (leftString) {
+        free(leftString);
+    }
+    if (rightString) {
+        free(rightString);
     }
     return repr;
 }
@@ -456,6 +482,11 @@ static void mathByte(const struct Operand *src, MathOp MATH)
 
 static inline void addByte(const struct Operand *operand) { mathByte(operand, ADC); }
 static inline void subtractByte(const struct Operand *operand) { mathByte(operand, SBC); }
+static inline void andByte(const struct Operand *operand) { mathByte(operand, AND); }
+static inline void orByte(const struct Operand *operand) { mathByte(operand, ORA); }
+static inline void xorByte(const struct Operand *operand) { mathByte(operand, EOR); }
+
+static void doNothing(void) { }
 
 struct Arithmetic {
     const char *Name;
@@ -481,32 +512,57 @@ static struct Arithmetic subtract = {
     .IncrementY = DEY,
 };
 
+static struct Arithmetic bitwiseAnd = {
+    .Name       = "AND",
+    .Operation  = andByte,
+    .ClearFlag  = doNothing,
+    .IncrementX = NULL,
+    .IncrementY = NULL,
+};
+
+static struct Arithmetic bitwiseOr = {
+    .Name       = "ORA",
+    .Operation  = orByte,
+    .ClearFlag  = doNothing,
+    .IncrementX = NULL,
+    .IncrementY = NULL,
+};
+
+static struct Arithmetic bitwiseXor = {
+    .Name       = "EOR",
+    .Operation  = xorByte,
+    .ClearFlag  = doNothing,
+    .IncrementX = NULL,
+    .IncrementY = NULL,
+};
+
 static inline char *mathMacroString(
     const struct Arithmetic *op,
     const char              *suffix,
     const struct Operand    *dst,
-    const struct Operand    *src)
+    const struct Operand    *left,
+    const struct Operand    *right)
 {
     char *macroName = stringf("%s%s", op->Name, suffix);
-    char *string = macroString(macroName, dst, src);
+    char *string = macroString(macroName, dst, left, right);
     free(macroName);
     return string;
 }
 
-static void MATHBB(const struct Arithmetic *op, const struct Operand *dst, const struct Operand *src)
+static void MATHBB(const struct Arithmetic *op, const struct Operand *dst, const struct Operand *left, const struct Operand *right)
 {
-    REM(mathMacroString(op, "BB", dst, src));
+    REM(mathMacroString(op, "BB", dst, left, right));
 
     if (dst->mode != MODE_REGISTER) {
-        loadByte('A', dst);
+        loadByte('A', left);
         op->ClearFlag();
-        op->Operation(src);
+        op->Operation(right);
         storeByte(dst);
         return;
     }
     // Optimize += 0, += 1, += 2
-    if (src->mode == MODE_IMMEDIATE && src->number.valid) {
-        switch (src->number.value) {
+    if (right->mode == MODE_IMMEDIATE && right->number.valid && op->IncrementX && op->IncrementY) {
+        switch (right->number.value) {
         case 0:
             REM("Optimized out += 0");
             return;
@@ -536,57 +592,92 @@ static void MATHBB(const struct Arithmetic *op, const struct Operand *dst, const
     if (regLow(dst) == 'X') {
         TXA();
         op->ClearFlag();
-        op->Operation(src);
+        op->Operation(right);
         TAX();
         return;
     }
     if (regLow(dst) == 'Y') {
         TYA();
         op->ClearFlag();
-        op->Operation(src);
+        op->Operation(right);
         TAY();
         return;
     }
     require(regLow(dst) == 'A', "expected register A; got %s", dst->immlo);
     op->ClearFlag();
-    op->Operation(src);
+    op->Operation(right);
     return;
 }
 
-static void MATHWB(const struct Arithmetic *op, const struct Operand *dst, const struct Operand *src)
+static void MATHWB(
+    const struct Arithmetic *op,
+    const struct Operand    *dst,
+    const struct Operand    *left,
+    const struct Operand    *right)
 {
-    REM(mathMacroString(op, "WB", dst, src));
+    REM(mathMacroString(op, "WB", dst, left, right));
 
     op->ClearFlag();
-    loadByte('A', dst);
-    op->Operation(src);
+    loadByte('A', left);
+    op->Operation(right);
     storeByte(dst);
 
-    struct Operand *msb = highByte(dst);
-    loadByte('A', msb);
-    op->Operation(&ZEROB);
-    storeByte(msb);
+    struct Operand *msbDst  = highByte(dst),
+                   *msbLeft = highByte(left);
 
-    FreeOperand(msb);
+    loadByte('A', msbLeft);
+    op->Operation(&ZEROB);
+    storeByte(msbDst);
+
+    FreeOperand(msbDst);
+    FreeOperand(msbLeft);
 }
 
-static void MATHWW(const struct Arithmetic *op, const struct Operand *dst, const struct Operand *src)
+static void MATHWW(
+    const struct Arithmetic *op,
+    const struct Operand    *dst,
+    const struct Operand    *left,
+    const struct Operand    *right)
 {
-    REM(mathMacroString(op, "WW", dst, src));
+    REM(mathMacroString(op, "WW", dst, left, right));
 
     op->ClearFlag();
-    loadByte('A', dst);
-    op->Operation(src);
+    loadByte('A', left);
+    op->Operation(right);
     storeByte(dst);
 
-    struct Operand *dstmsb = highByte(dst),
-                   *srcmsb = highByte(src);
-    loadByte('A', dstmsb);
-    op->Operation(srcmsb);
-    storeByte(dstmsb);
+    struct Operand *msbDst   = highByte(dst),
+                   *msbLeft  = highByte(left),
+                   *msbRight = highByte(right);
+    loadByte('A', msbLeft);
+    op->Operation(msbRight);
+    storeByte(msbDst);
 
-    FreeOperand(srcmsb);
-    FreeOperand(dstmsb);
+    FreeOperand(msbRight);
+    FreeOperand(msbLeft);
+    FreeOperand(msbDst);
+}
+
+static inline void mathMacro(
+    const struct Arithmetic *op,
+    const struct Operand    *dst,
+    const struct Operand    *left,
+    const struct Operand    *right)
+{
+    if (dst->size == 1) {
+        MATHBB(op, dst, left, right);
+        if (right->size == 2) {
+            warnf("right-hand side will be truncated to a byte");
+            REM(strcopy("WARNING: VALUE TRUNCATED"));
+        }
+    } else if (dst->size == 2 && right->size == 1) {
+        MATHWB(op, dst, left, right);
+    } else if (dst->size == 2 && right->size == 2) {
+        MATHWW(op, dst, left, right);
+    } else {
+        fatalf("%s: bad operand size: %u <- %u %s %u",
+            __func__, dst->size, left->size, op->Name, right->size);
+    }
 }
 
 void ADDR(const char *pointer, const struct Operand *src)
@@ -595,6 +686,8 @@ void ADDR(const char *pointer, const struct Operand *src)
     STX(stringf("%s+1", pointer));
     STA(stringf("%s", pointer));
 }
+
+void BITAND(const struct Operand *dst, const struct Operand *src) { mathMacro(&bitwiseAnd, dst, dst, src); }
 
 void FreeOperand(struct Operand *operand)
 {
@@ -615,7 +708,7 @@ void FreeOperand(struct Operand *operand)
 
 static void COPYBB(const struct Operand *dst, const struct Operand *src)
 {
-    REM(macroString(__func__, dst, src));
+    REM(macroString(__func__, dst, src, NULL));
     if (dst->mode == MODE_REGISTER) {
         loadByte(regLow(dst), src);
         return;
@@ -626,7 +719,7 @@ static void COPYBB(const struct Operand *dst, const struct Operand *src)
 
 static void COPYWB(const struct Operand *dst, const struct Operand *src)
 {
-    REM(macroString(__func__, dst, src));
+    REM(macroString(__func__, dst, src, NULL));
     if (dst->mode == MODE_REGISTER) {
         loadByte(regLow(dst), src);
         loadByte(regHigh(dst), &ZEROB);
@@ -639,7 +732,7 @@ static void COPYWB(const struct Operand *dst, const struct Operand *src)
 
 static void COPYWW(const struct Operand *dst, const struct Operand *src)
 {
-    REM(macroString(__func__, dst, src));
+    REM(macroString(__func__, dst, src, NULL));
     if (dst->mode == MODE_REGISTER) {
         loadWord(regHigh(dst), regLow(dst), src);
         return;
@@ -737,7 +830,7 @@ void IFEQ(const struct Operand *left, const struct Operand *right, const char *t
         return;
     }
 
-    REM(macroString(__func__, left, right));
+    REM(macroString(__func__, left, right, NULL));
     REM(stringf("  %s %s", then, done));
 
     if (left->size == 1 && right->size == 1) {
@@ -801,7 +894,7 @@ void IFEQ(const struct Operand *left, const struct Operand *right, const char *t
 // left >= right
 void IFGE(const struct Operand *left, const struct Operand *right, const char *then, const char *done)
 {
-    REM(macroString(__func__, left, right));
+    REM(macroString(__func__, left, right, NULL));
     REM(stringf("  %s %s", then, done));
 
     if (left->size == 1 && right->size == 1) {
@@ -899,7 +992,7 @@ void IFLT(const struct Operand *left, const struct Operand *right, const char *t
         return;
     }
 
-    REM(macroString(__func__, left, right));
+    REM(macroString(__func__, left, right, NULL));
     REM(stringf("  %s %s", then, done));
 
     if (left->size == 1 && right->size == 1) {
@@ -976,7 +1069,7 @@ void IFNE(const struct Operand *left, const struct Operand *right, const char *t
         return;
     }
 
-    REM(macroString(__func__, left, right));
+    REM(macroString(__func__, left, right, NULL));
     REM(stringf("  %s %s", then, done));
 
     if (left->size == 1 && right->size == 1) {
@@ -1037,22 +1130,8 @@ void IFNE(const struct Operand *left, const struct Operand *right, const char *t
     }
 }
 
-void LESS(const struct Operand *dst, const struct Operand *src)
-{
-    if (dst->size == 1) {
-        MATHBB(&subtract, dst, src);
-        if (src->size == 2) {
-            warnf("right-hand side will be truncated to a byte");
-            REM(strcopy("WARNING: VALUE TRUNCATED"));
-        }
-    } else if (dst->size == 2 && src->size == 1) {
-        MATHWB(&subtract, dst, src);
-    } else if (dst->size == 2 && src->size == 2) {
-        MATHWW(&subtract, dst, src);
-    } else {
-        fatalf("%s: bad operand size: %u %u", __func__, dst->size, src->size);
-    }
-}
+void LESS(const struct Operand *dst, const struct Operand *src) { mathMacro(&subtract, dst, dst, src); }
+void NOT(const struct Operand *dst, const struct Operand *src) { mathMacro(&bitwiseXor, dst, src, &ONES); }
 
 struct Operand *OpAbsolute(const char *base, uint8_t size)
 {
@@ -1103,19 +1182,6 @@ struct Operand *OpRegisterWord(char reghi, char reglo)
     return Operand(MODE_REGISTER, 2, NULL, NULL, stringf("%c", reglo), stringf("%c", reghi));
 }
 
-void PLUS(const struct Operand *dst, const struct Operand *src)
-{
-    if (dst->size == 1) {
-        MATHBB(&addition, dst, src);
-        if (src->size == 2) {
-            warnf("right-hand side will be truncated to a byte");
-            REM(strcopy("WARNING: VALUE TRUNCATED"));
-        }
-    } else if (dst->size == 2 && src->size == 1) {
-        MATHWB(&addition, dst, src);
-    } else if (dst->size == 2 && src->size == 2) {
-        MATHWW(&addition, dst, src);
-    } else {
-        fatalf("%s: bad operand size: %u %u", __func__, dst->size, src->size);
-    }
-}
+void OR(const struct Operand *dst, const struct Operand *src) { mathMacro(&bitwiseOr, dst, dst, src); }
+void PLUS(const struct Operand *dst, const struct Operand *src) { mathMacro(&addition, dst, dst, src); }
+void XOR(const struct Operand *dst, const struct Operand *src) { mathMacro(&bitwiseXor, dst, dst, src); }

@@ -373,6 +373,14 @@ void generateArithmetic(const struct IdentPhrase *lhs, const struct Value *rhs, 
         PLUS(dst, src);
     } else if (kind == '-') {
         LESS(dst, src);
+    } else if (kind == '&') {
+        BITAND(dst, src);
+    } else if (kind == '|') {
+        OR(dst, src);
+    } else if (kind == '^') {
+        XOR(dst, src);
+    } else if (kind == '!') {
+        NOT(dst, src);
     } else {
         fatalf("%s: unexpected kind: %c=", __func__, kind);
     }
@@ -394,13 +402,11 @@ void generateAssignment(const struct Assignment *assign)
         return;
     case '+':
     case '-':
+    case '&': // AND
+    case '|': // ORA
+    case '^': // EOR
+    case '!': // (bitwise not) EOR #%11111111
         generateArithmetic(&assign->ident, &assign->value, assign->kind);
-        return;
-    case '&':
-    case '|':
-    case '~':
-    case '!':
-        REM(stringf("TODO: handle STMT_ASSIGN for %c=", assign->kind));
         return;
     }
 

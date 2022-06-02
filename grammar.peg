@@ -79,7 +79,7 @@ Subscript   <- '_' _ Numerical
 FieldAccess <- '.' _ Identifier
 
 Assignment  <- IdentPhrase Assign Value
-Assign      <- [:+\-&|~!] '=' _
+Assign      <- [:+\-&|^!] '=' _
 
 Conditional <- "if" &Space _ Comparison Block
 

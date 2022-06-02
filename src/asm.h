@@ -25,6 +25,10 @@ void SBC(char *operand);
 void CLC(void);
 void SEC(void);
 
+void AND(char *operand);
+void ORA(char *operand);
+void EOR(char *operand);
+
 void ASL(void);
 
 void INC(char *operand);
@@ -95,6 +99,14 @@ void COPY(const struct Operand *dst, const struct Operand *src);
 void PLUS(const struct Operand *dst, const struct Operand *src);
 // dst -= src
 void LESS(const struct Operand *dst, const struct Operand *src);
+// dst &= src
+void BITAND(const struct Operand *dst, const struct Operand *src);
+// dst |= src
+void OR(const struct Operand *dst, const struct Operand *src);
+// dst ^= src
+void XOR(const struct Operand *dst, const struct Operand *src);
+// dst != src
+void NOT(const struct Operand *dst, const struct Operand *src);
 
 typedef void (*COND)(const struct Operand *, const struct Operand *, const char *, const char *);
 // left == right

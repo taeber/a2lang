@@ -176,7 +176,7 @@ const char *Assignment(const char *text, struct Assignment *outAssign)
         case '-':
         case '&':
         case '|':
-        case '~':
+        case '^':
         case '!':
             outAssign->kind = *text;
             text++;
