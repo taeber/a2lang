@@ -65,6 +65,17 @@ var [
 
     KYBD  : byte @ $C000
     STROBE: byte @ $C010
+
+    ROWA  : byte^10 @ $481
+    ROWB  : byte^10 @ $501
+    ROWC  : byte^10 @ $581
+    ROWD  : byte^10 @ $601
+    ROWE  : byte^10 @ $681
+    ROWF  : byte^10 @ $701
+    ROWG  : byte^10 @ $781
+    ROWH  : byte^10 @ $429
+    ROWI  : byte^10 @ $4A9
+    ROWJ  : byte^10 @ $529
 ]
 
 
@@ -172,6 +183,12 @@ let ReadKey = sub -> [key: byte @ A] {
     while KYBD < $80 {
     }
     STROBE := key
+}
+
+
+let Notify = sub <- [txt: text @ PTR] {
+    SetCursorRow(22)
+    Print(txt)
 }
 
 ; Screen dirty flag.
@@ -302,7 +319,42 @@ let Over10By = sub <- [base: int, added: int] -> [over: int] {
     over := base
 }
 
-let Input = sub {
+let NumPiecesInRow = sub <- [row: byte^ @ PTR] -> [cnt: int] {
+    cnt := 0
+    var i: int
+    i := 0
+    while i < 10 {
+        if row_i <> SPACE {
+            cnt += 1
+        }
+        i += 1
+    }
+}
+
+let TryPlay = sub -> [valid: bool] {
+    var cnt: int
+    cnt := NumPiecesInRow(ROWA)
+    cnt += NumPiecesInRow(ROWB)
+    cnt += NumPiecesInRow(ROWC)
+    cnt += NumPiecesInRow(ROWD)
+    cnt += NumPiecesInRow(ROWE)
+    cnt += NumPiecesInRow(ROWF)
+    cnt += NumPiecesInRow(ROWG)
+    cnt += NumPiecesInRow(ROWH)
+    cnt += NumPiecesInRow(ROWI)
+    cnt += NumPiecesInRow(ROWJ)
+    ; The expected number of ship pieces is 17 (=5+4+3+3+2)
+    if cnt == 17 {
+        valid := TRUE
+        ->
+    }
+    Notify("INVALID; SHIPS OVERLAP.")
+    valid := FALSE
+}
+
+let Input = sub -> [ready: bool] {
+    ready := FALSE
+
     var ship: Ship^ @ PTR
     ship := CurrentShip
 
@@ -312,13 +364,14 @@ let Input = sub {
         EXIT()
         ->
     }
-    LINE1_39 := key
     if key == SPACE {
+        ready := TryPlay()
         ->
     }
     if key == RETURN {
         ->
     }
+    LINE1_39 := key
     if key == LEFT {
         if ship.x > 0 {
             ship.x -= 1
@@ -363,10 +416,8 @@ let Input = sub {
         screenDirty := TRUE
         CurrentShip += cShipSize
 
-        PrintAddress(CurrentShip)
         var outofbounds: Ship^ @ PTR
         outofbounds := Ships_cShipsSize
-        PrintAddress(outofbounds)
         if CurrentShip == outofbounds {
             CurrentShip := Ships_0
         }
@@ -402,11 +453,18 @@ let Input = sub {
     }
 }
 
-; Game loop
+let Setup = sub {
+    var ready: bool
+    ready := FALSE
+    while ready == FALSE {
+        Redraw()
+        ready := Input()
+    }
+}
+
 let Play = sub {
-    Redraw()
-    Input()
-    Play()
+    HOME()
+    Print("READY")
 }
 
 ; Program entry point
@@ -446,6 +504,7 @@ let main = sub {
 
     CurrentShip := Ships_0
 
+    Setup()
     Play()
 }
 
