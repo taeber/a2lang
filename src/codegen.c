@@ -349,7 +349,7 @@ void generateArithmetic(const struct IdentPhrase *lhs, const struct Value *rhs, 
             struct Symbol *sym = getsym(&lhs->identifier.String);
             require(!IsGroup(sym), "TODO: handle multiple outputs");
         }
-        const struct Symbol *subsym   = LookupSubroutine(&rhs->Call.ident.identifier.String, 1);
+        const struct Symbol *subsym   = LookupSubroutine(&rhs->Call.ident.identifier.String, rhs->Call.args.len);
         const struct Symbol *output   = GetOutput(subsym, NULL, 0);
         struct IdentPhrase   phrase   = { 0 };
         phrase.identifier.String.text = GetName(output);
