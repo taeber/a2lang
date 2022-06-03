@@ -53,7 +53,9 @@ function clean
 
 function compile
 {
+    set -o pipefail
     src/compile $* | expand -t16
+    set +o pipefail
 }
 
 function deps
