@@ -1,0 +1,460 @@
+;-]
+; WARSHIPS
+;   A game for Roona
+;
+; Copyright 2022 Taeber Rapczak <taeber@rapczak.com>
+;-]
+
+;;; Apple II Section
+
+asm {
+	ORG $2000
+	JSR main
+	JMP EXIT
+}
+
+; Apple II monitor subroutines
+use [
+    EXIT : sub @ $3D0
+    BREAK: sub @ $FA4C
+
+    INIT: sub @ $FB2F
+    HOME: sub @ $FC58
+
+    COUT : sub <- [ch: char @ A]   @ $FDED
+    CROUT: sub @ $FD8E
+
+    NORMAL : sub @ $F273
+    INVERSE: sub @ $F277
+    FLASH  : sub @ $F280
+
+    TABV: sub <- [row: int @ A]   @ $FB5B
+
+    PRBYTE: sub <- [byte: byte @ A] @ $FDDA
+
+    ; I guess the RDKEY sub isn't reliable on the unenhanced Apple //e.
+    ;   https://mirrors.apple2.org.za/Apple%20II%20Documentation%20Project/Computers/Apple%20II/Apple%20II/Documentation/Misc%20%23010%2080-col%20GetChar.pdf
+    RDKEY: sub -> [key: byte @ A]  @ $FD0C
+]
+
+; Apple II Zero Page variables
+var [
+    WNDLFT: byte @ $20  ; Left margin
+    WNDBTM: byte @ $23  ; Bottom margin
+    CH    : byte @ $24  ; Cursor's horizontal position
+    CV    : byte @ $25  ; Cursor's vertical position
+]
+
+let (
+    ESCAPE  = $9B
+    SPACE   = $A0
+    RETURN  = $8D
+    LEFT    = $88
+    RIGHT   = $95
+    DOWN    = $8A
+    UP      = $8B
+    TAB     = $89
+)
+
+let (
+    COLS = 40
+)
+
+var [
+    LINE1 : byte^COLS @ $400 ; Top Left
+
+    KYBD  : byte @ $C000
+    STROBE: byte @ $C010
+]
+
+
+;;; Non–game-specific code
+
+; Boolean literals
+let (
+    bool  = :byte
+    FALSE = 0
+    TRUE  = -1
+)
+
+; Pointers
+var [
+    PTR: word @ $06
+    DST: word @ $06
+    SRC: word @ $08
+]
+
+; Screen position
+let Position = [
+    H: int
+    V: int
+]
+
+
+use [
+    Copy: sub <- [dst: byte^ @ DST, src: byte^ @ SRC, size: word]
+
+    SetCursor: sub <- [col: int @ A, row: int @ Y]
+    ; SetCursorCol places the horizontal cursor (CH) at col.
+    SetCursorCol: sub <- [col: int @ A]
+    ; SetCursorRow places the vertical cursor (CH) at row.
+    SetCursorRow: sub <- [row: int @ A] @ TABV
+]
+
+
+var Cursor: Position @ CH
+
+
+let Copy = sub <- [dst: byte^ @ DST, src: byte^ @ SRC, size: word] {
+    var i: int
+    while i < size {
+        dst_i := src_i
+        i += 1
+    }
+}
+
+
+let SetCursor = sub <- [col: int @ A, row: int @ Y] {
+    Cursor.H := col
+    SetCursorRow(row)
+}
+
+let SetCursorCol = sub <- [col: int @ A] {
+    Cursor.H := col
+}
+
+;;; Game code
+
+let Ship = [
+    x           : int
+    y           : int
+    horizontal  : bool
+    size        : int
+    graphic	    : char
+    remaining	: int
+]
+
+let (
+    cShipSize  = 6  ; TODO: have a builtin size() and len()
+    cShipsCnt  = 5
+    cShipsSize = 30 ; 6*5
+)
+
+
+use PSHIPS: Ship^cShipsCnt
+
+var [
+    Ships: Ship^cShipsCnt   ; @ PSHIPS TODO: allow this type of var decl
+    CurrentShip: Ship^ @ $FE
+]
+
+
+; Print writes the ASCII txt to the screen.
+let Print = sub <- [txt: text @ PTR] {
+    var i: int @ Y
+    i := 0
+    while txt_i <> 0 {
+        COUT(txt_i)
+        i += 1
+    }
+}
+
+; Flashing prints the ASCII txt to the screen in FLASH mode.
+let Flashing = sub <- [txt: text @ PTR] {
+    FLASH()
+    Print(txt)
+    NORMAL()
+}
+
+
+; ReadKey waits for keyboard input and returns the key pressed.
+let ReadKey = sub -> [key: byte @ A] {
+    while KYBD < $80 {
+    }
+    STROBE := key
+}
+
+; Screen dirty flag.
+var screenDirty: bool
+
+
+let PrintInstructions = sub {
+    WNDLFT := 15
+    SetCursor(col=1, row=1)
+    Print("PLACE YOUR SHIPS")
+    CROUT()
+    CROUT()
+    Print("ARROWS - MOVE")
+    CROUT()
+    Print("   TAB - SWITCH")
+    CROUT()
+    Print("     R - ROTATE")
+    CROUT()
+    Print(" SPACE - DONE")
+    CROUT()
+    Print("   ESC - QUIT")
+    CROUT()
+    WNDLFT := 0
+    SetCursor(col=0, row=0)
+}
+
+
+let DrawGrid = sub {
+    X := 0
+asm {
+* PrCols prints the column names starting from X
+PrCols	LDA PrColsD,X
+	BEQ PrRows
+	STA LINE1,X
+	INX
+	JMP PrCols
+PrColsD	ASC " 12345678910"
+*PrColsD	ASC " 0123456789"
+	HEX 00
+
+* PrRows prints the row names.
+PrRows	LDX #0
+PrRows1	LDA PrRowsD,X
+	BEQ PrRows2
+	JSR COUT
+	JSR CROUT
+	INX
+	JMP PrRows1
+PrRowsD	ASC " ABCDEFGHIJ"
+*PrRowsD	ASC " 0123456789"
+	HEX 00
+PrRows2	RTS
+}
+}
+
+
+let PrintAddress = sub <- [subr: byte^ @ $FC] {
+    var addr: byte^2 @ $FC
+    PRBYTE(addr_1)
+    PRBYTE(addr_0)
+}
+
+
+let DrawShip = sub <- [ship: Ship^ @ PTR] {
+    CH := ship.x
+    CV := ship.y
+
+    CH += 1
+    CV += 1
+    TABV()
+
+    var i: int
+    i := 0
+    while i < ship.size {
+        COUT(ship.graphic)
+        if ship.horizontal == 0 {
+            CH -= 1
+            CV += 1
+            TABV()
+        }
+        i += 1
+    }
+}
+
+let DrawShips = sub {
+    var [
+        prev: Position
+        ship: Ship^ @ PTR
+        i   : int
+    ]
+
+    prev.H := Cursor.H
+    prev.V := Cursor.V
+
+    i := 0
+    ship := Ships
+    while i < cShipsCnt {
+        DrawShip(ship)
+        ship += cShipSize
+        i += 1
+    }
+
+    INVERSE()
+    DrawShip(CurrentShip)
+    NORMAL()
+
+    SetCursor(col=prev.H, row=prev.V)
+}
+
+; Redraws the screen if screenDirty is set.
+let Redraw = sub {
+    if screenDirty <> 0 {
+        HOME()
+        DrawGrid()
+        DrawShips()
+        PrintInstructions()
+        screenDirty := 0
+    }
+}
+
+let Over10By = sub <- [base: int, added: int] -> [over: int] {
+    base += added
+    if base <= 10 {
+        over := 0
+        ->
+    }
+    base -= 10
+    over := base
+}
+
+let Input = sub {
+    var ship: Ship^ @ PTR
+    ship := CurrentShip
+
+    var key: byte @ A
+    key := ReadKey()
+    if key == ESCAPE {
+        EXIT()
+        ->
+    }
+    LINE1_39 := key
+    if key == SPACE {
+        ->
+    }
+    if key == RETURN {
+        ->
+    }
+    if key == LEFT {
+        if ship.x > 0 {
+            ship.x -= 1
+            screenDirty := TRUE
+        }
+        ->
+    }
+    if key == RIGHT {
+        var rightmost: int
+        rightmost := ship.x
+        if ship.horizontal <> FALSE {
+            rightmost += ship.size
+            rightmost -= 1
+        }
+        if rightmost < 9 {
+            ship.x += 1
+            screenDirty := TRUE
+        }
+        ->
+    }
+    if key == DOWN {
+        var bottommost: int
+        bottommost := ship.y
+        if ship.horizontal == FALSE {
+            bottommost += ship.size
+            bottommost -= 1
+        }
+        if bottommost < 9 {
+            ship.y += 1
+            screenDirty := TRUE
+        }
+        ->
+    }
+    if key == UP {
+        if ship.y > 0 {
+            ship.y -= 1
+            screenDirty := TRUE
+        }
+        ->
+    }
+    if key == TAB {
+        screenDirty := TRUE
+        CurrentShip += cShipSize
+
+        PrintAddress(CurrentShip)
+        var outofbounds: Ship^ @ PTR
+        outofbounds := Ships_cShipsSize
+        PrintAddress(outofbounds)
+        if CurrentShip == outofbounds {
+            CurrentShip := Ships_0
+        }
+        ->
+    }
+    if key == `R {  ; Rotate
+        ship.horizontal != ship.horizontal
+        screenDirty := TRUE
+        if ship.horizontal == FALSE {
+            ship.y -= Over10By(ship.y, ship.size)
+        }
+        if ship.horizontal <> FALSE {
+            ship.x -= Over10By(ship.x, ship.size)
+        }
+        ->
+    }
+; TODO figure out what's wrong after this...
+->
+    if key == `0 {
+        ->
+    }
+    if key >= `1 {
+        ;if key <= `9 {
+        if `: > key {
+        }
+        ->
+    }
+    if key >= `A {
+        ;if key <= `K {
+        if `L > key {
+        }
+        ->
+    }
+}
+
+; Game loop
+let Play = sub {
+    Redraw()
+    Input()
+    Play()
+}
+
+; Program entry point
+let main = sub {
+    INIT()
+    HOME()
+
+    var key: byte
+
+    SetCursorCol(15)
+    Print("WARSHIPS")
+    ;ReadKey()
+
+    CROUT()
+    SetCursorCol(11)
+    Print("A GAME FOR ROONA")
+    CROUT()
+    CROUT()
+    Print("HAPPY BIRTHDAY, ")
+    Flashing("ROONA")
+    Print("!")
+    CROUT()
+    Print("LOVE, UNCLE NIGEL")
+    CROUT()
+
+    SetCursorRow(22)
+    Print("COPYRIGHT (C) 2020-2022 TAEBER RAPCZAK")
+    CROUT()
+    Print("VERSION 0.2.0 2022-05-03")
+
+    ;ReadKey()
+
+    screenDirty := TRUE
+
+    ; Initialize ships
+    Copy(Ships, PSHIPS, 30)
+
+    CurrentShip := Ships_0
+
+    Play()
+}
+
+asm {
+PSHIPS	DFB 0,0,0,5,$B5,5
+	DFB 1,0,0,4,$B4,4
+	DFB 2,0,0,3,$B3,3
+	DFB 3,0,0,3,$C4,3
+	DFB 4,0,$FF,2,$B2,2
+}
+
+; vim: set invlist colorcolumn=80:
