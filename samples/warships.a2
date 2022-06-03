@@ -16,6 +16,7 @@ asm {
 ; Apple II monitor subroutines
 use [
     EXIT : sub @ $3D0
+    MONZ : sub @ $FF69
     BREAK: sub @ $FA4C
 
     INIT: sub @ $FB2F
@@ -43,6 +44,11 @@ var [
     WNDBTM: byte @ $23  ; Bottom margin
     CH    : byte @ $24  ; Cursor's horizontal position
     CV    : byte @ $25  ; Cursor's vertical position
+]
+
+use [
+    RNDL: byte @ $4E    ; Random value, low
+    RNDH: byte @ $4F    ; Random value, high
 ]
 
 let (
@@ -118,6 +124,7 @@ var Cursor: Position @ CH
 
 let Copy = sub <- [dst: byte^ @ DST, src: byte^ @ SRC, size: word] {
     var i: int
+    i := 0
     while i < size {
         dst_i := src_i
         i += 1
@@ -141,8 +148,14 @@ let Ship = [
     y           : int
     horizontal  : bool
     size        : int
-    graphic	    : char
-    remaining	: int
+    graphic     : char
+    remaining   : int
+]
+
+let InitPos = [
+    X         : int
+    Y         : int
+    Horizontal: bool
 ]
 
 let (
@@ -151,12 +164,14 @@ let (
     cShipsSize = 30 ; 6*5
 )
 
-
 use PSHIPS: Ship^cShipsCnt
+use EInitPos: InitPos^20   ; 20 = 4pos * 5ships
 
 var [
     Ships: Ship^cShipsCnt   ; @ PSHIPS TODO: allow this type of var decl
+    EShips: Ship^cShipsCnt  ; Enemy ships
     CurrentShip: Ship^ @ $FE
+    Random: byte
 ]
 
 
@@ -180,6 +195,7 @@ let Flashing = sub <- [txt: text @ PTR] {
 
 ; ReadKey waits for keyboard input and returns the key pressed.
 let ReadKey = sub -> [key: byte @ A] {
+    Random += 1
     while KYBD < $80 {
     }
     STROBE := key
@@ -273,27 +289,33 @@ let DrawShip = sub <- [ship: Ship^ @ PTR] {
     }
 }
 
-let DrawShips = sub {
+let DrawShips = sub <- [ship: Ship^ @ PTR] {
     var [
         prev: Position
-        ship: Ship^ @ PTR
+        curr: bool
         i   : int
     ]
 
     prev.H := Cursor.H
     prev.V := Cursor.V
 
+    curr := FALSE
+
     i := 0
-    ship := Ships
     while i < cShipsCnt {
+        if ship == CurrentShip {
+            curr := TRUE
+        }
         DrawShip(ship)
         ship += cShipSize
         i += 1
     }
 
-    INVERSE()
-    DrawShip(CurrentShip)
-    NORMAL()
+    if curr <> FALSE {
+        INVERSE()
+        DrawShip(CurrentShip)
+        NORMAL()
+    }
 
     SetCursor(col=prev.H, row=prev.V)
 }
@@ -303,7 +325,7 @@ let Redraw = sub {
     if screenDirty <> 0 {
         HOME()
         DrawGrid()
-        DrawShips()
+        DrawShips(Ships)
         PrintInstructions()
         screenDirty := 0
     }
@@ -348,7 +370,6 @@ let TryPlay = sub -> [valid: bool] {
         valid := TRUE
         ->
     }
-    Notify("INVALID; SHIPS OVERLAP.")
     valid := FALSE
 }
 
@@ -369,9 +390,9 @@ let Input = sub -> [ready: bool] {
         ->
     }
     if key == RETURN {
+        MONZ()
         ->
     }
-    LINE1_39 := key
     if key == LEFT {
         if ship.x > 0 {
             ship.x -= 1
@@ -453,6 +474,32 @@ let Input = sub -> [ready: bool] {
     }
 }
 
+let EnemySetup = sub {
+    var [
+        position: int
+        initPos: InitPos^ @ SRC
+        ship: Ship^ @ DST
+        i: int
+    ]
+    position := Random
+    position &= %00000011  ; Only 4 choices
+    initPos := EInitPos_0
+    while position > 0 {
+        initPos += 15  ; sizeof InitPos (3) times ships (5)
+        position -= 1
+    }
+    ship := EShips_0
+    i := 0
+    while i < cShipsCnt {
+        ship.x := initPos.X
+        ship.y := initPos.Y
+        ship.horizontal := initPos.Horizontal
+        i += 1
+        ship += cShipSize
+        initPos += 3  ; sizeof InitPos
+    }
+}
+
 let Setup = sub {
     var ready: bool
     ready := FALSE
@@ -460,6 +507,11 @@ let Setup = sub {
         Redraw()
         ready := Input()
     }
+    EnemySetup()
+    HOME()
+    DrawGrid()
+    DrawShips(EShips)
+    ReadKey()
 }
 
 let Play = sub {
@@ -501,6 +553,7 @@ let main = sub {
 
     ; Initialize ships
     Copy(Ships, PSHIPS, 30)
+    Copy(EShips, PSHIPS, 30)
 
     CurrentShip := Ships_0
 
@@ -514,6 +567,32 @@ PSHIPS	DFB 0,0,0,5,$B5,5
 	DFB 2,0,0,3,$B3,3
 	DFB 3,0,0,3,$C4,3
 	DFB 4,0,$FF,2,$B2,2
+* 4 POSSIBLE ENEMY STARTING POSITIONS
+* EInitPos [4]pos
+* sizeof(EInitPos[0])== 3*5 = 15
+EInitPos	DFB 5,5,1
+	DFB 7,6,0
+	DFB 1,4,0
+	DFB 7,1,0
+	DFB 5,0,0
+*
+	DFB 2,2,1
+	DFB 5,5,1
+	DFB 6,8,1
+	DFB 7,0,1
+	DFB 1,1,1
+*
+	DFB 2,4,1
+	DFB 2,5,0
+	DFB 6,5,0
+	DFB 9,0,0
+	DFB 9,3,0
+*
+	DFB 0,2,0
+	DFB 2,9,1
+	DFB 9,6,0
+	DFB 3,0,1
+	DFB 9,2,0
 }
 
 ; vim: set invlist colorcolumn=80:
