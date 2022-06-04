@@ -137,99 +137,78 @@ let SetCursor = sub <- [col: int @ A, row: int @ Y] {
     SetCursorRow(row)
 }
 
+
 let SetCursorCol = sub <- [col: int @ A] {
     Cursor.H := col
 }
 
 ;;; Game code
 
-let Ship = [
-    x           : int
-    y           : int
-    horizontal  : bool
-    size        : int
-    graphic     : char
-    remaining   : int
-]
-
-let InitPos = [
-    X         : int
-    Y         : int
-    Horizontal: bool
-]
-
 let (
+    Ship = [
+        X           : int
+        Y           : int
+        Horizontal  : bool
+        Size        : int
+        Graphic     : char
+        Remaining   : int
+    ]
     cShipSize  = 6  ; TODO: have a builtin size() and len()
     cShipsCnt  = 5
     cShipsSize = 30 ; 6*5
 )
 
-use PSHIPS: Ship^cShipsCnt
-use EInitPos: InitPos^20   ; 20 = 4pos * 5ships
+let (
+    InitPos = [
+        X         : int
+        Y         : int
+        Horizontal: bool
+    ]
+    cInitPosSize = 3
+    cEInitPosSize = 20   ; 20 = 4pos * 5ships
+)
 
-var [
-    Ships: Ship^cShipsCnt   ; @ PSHIPS TODO: allow this type of var decl
-    EShips: Ship^cShipsCnt  ; Enemy ships
-    CurrentShip: Ship^ @ $FE
-    Random: byte
+use [
+    PSHIPS  : Ship^cShipsCnt
+    EINITPOS: InitPos^cEInitPosSize
 ]
 
+var [
+    Ships      : Ship^cShipsCnt   ; @ PSHIPS TODO: allow this type of var decl
+    EShips     : Ship^cShipsCnt  ; Enemy ships
+    CurrentShip: Ship^ @ $FE
 
-; Print writes the ASCII txt to the screen.
-let Print = sub <- [txt: text @ PTR] {
-    var i: int @ Y
-    i := 0
-    while txt_i <> 0 {
-        COUT(txt_i)
-        i += 1
-    }
-}
+    Random: byte
 
-; Flashing prints the ASCII txt to the screen in FLASH mode.
-let Flashing = sub <- [txt: text @ PTR] {
-    FLASH()
-    Print(txt)
-    NORMAL()
-}
+    ScreenDirty: bool
+]
 
+use [
+    PrintAddress: sub <- [subr: byte^ @ $FC]
 
-; ReadKey waits for keyboard input and returns the key pressed.
-let ReadKey = sub -> [key: byte @ A] {
-    Random += 1
-    while KYBD < $80 {
-    }
-    STROBE := key
-}
+    Print   : sub <- [txt: text @ PTR]
+    Flashing: sub <- [txt: text @ PTR]
+    Notify  : sub <- [txt: text @ PTR]
 
+    Input  : sub -> [ready: bool]
+    ReadKey: sub -> [key: byte @ A]
 
-let Notify = sub <- [txt: text @ PTR] {
-    SetCursorRow(22)
-    Print(txt)
-}
+    Redraw   : sub
+    DrawShip : sub <- [ship: Ship^ @ PTR]
+    DrawShips: sub <- [ship: Ship^ @ PTR]
+    DrawGrid : sub
 
-; Screen dirty flag.
-var screenDirty: bool
+    Over10By      : sub <- [base: int, added: int] -> [over: int]
+    NumPiecesInRow: sub <- [row: byte^ @ PTR] -> [cnt: int]
+    TryPlay       : sub -> [valid: bool]
 
+    Setup     : sub
+    EnemySetup: sub
 
-let PrintInstructions = sub {
-    WNDLFT := 15
-    SetCursor(col=1, row=1)
-    Print("PLACE YOUR SHIPS")
-    CROUT()
-    CROUT()
-    Print("ARROWS - MOVE")
-    CROUT()
-    Print("   TAB - SWITCH")
-    CROUT()
-    Print("     R - ROTATE")
-    CROUT()
-    Print(" SPACE - DONE")
-    CROUT()
-    Print("   ESC - QUIT")
-    CROUT()
-    WNDLFT := 0
-    SetCursor(col=0, row=0)
-}
+    Play: sub
+
+    main: sub
+]
 
 
 let DrawGrid = sub {
@@ -261,16 +240,9 @@ PrRows2	RTS
 }
 
 
-let PrintAddress = sub <- [subr: byte^ @ $FC] {
-    var addr: byte^2 @ $FC
-    PRBYTE(addr_1)
-    PRBYTE(addr_0)
-}
-
-
 let DrawShip = sub <- [ship: Ship^ @ PTR] {
-    CH := ship.x
-    CV := ship.y
+    CH := ship.X
+    CV := ship.Y
 
     CH += 1
     CV += 1
@@ -278,9 +250,9 @@ let DrawShip = sub <- [ship: Ship^ @ PTR] {
 
     var i: int
     i := 0
-    while i < ship.size {
-        COUT(ship.graphic)
-        if ship.horizontal == 0 {
+    while i < ship.Size {
+        COUT(ship.Graphic)
+        if ship.Horizontal == 0 {
             CH -= 1
             CV += 1
             TABV()
@@ -288,6 +260,7 @@ let DrawShip = sub <- [ship: Ship^ @ PTR] {
         i += 1
     }
 }
+
 
 let DrawShips = sub <- [ship: Ship^ @ PTR] {
     var [
@@ -320,58 +293,41 @@ let DrawShips = sub <- [ship: Ship^ @ PTR] {
     SetCursor(col=prev.H, row=prev.V)
 }
 
-; Redraws the screen if screenDirty is set.
-let Redraw = sub {
-    if screenDirty <> 0 {
-        HOME()
-        DrawGrid()
-        DrawShips(Ships)
-        PrintInstructions()
-        screenDirty := 0
-    }
-}
 
-let Over10By = sub <- [base: int, added: int] -> [over: int] {
-    base += added
-    if base <= 10 {
-        over := 0
-        ->
+let EnemySetup = sub {
+    var [
+        position: int
+        initPos: InitPos^ @ SRC
+        ship: Ship^ @ DST
+        i: int
+    ]
+    position := Random
+    position &= %00000011  ; Only 4 choices
+    initPos := EINITPOS_0
+    while position > 0 {
+        initPos += 15  ; sizeof InitPos (3) times ships (5)
+        position -= 1
     }
-    base -= 10
-    over := base
-}
-
-let NumPiecesInRow = sub <- [row: byte^ @ PTR] -> [cnt: int] {
-    cnt := 0
-    var i: int
+    ship := EShips_0
     i := 0
-    while i < 10 {
-        if row_i <> SPACE {
-            cnt += 1
-        }
+    while i < cShipsCnt {
+        ship.X := initPos.X
+        ship.Y := initPos.Y
+        ship.Horizontal := initPos.Horizontal
         i += 1
+        ship += cShipSize
+        initPos += 3  ; sizeof InitPos
     }
 }
 
-let TryPlay = sub -> [valid: bool] {
-    var cnt: int
-    cnt := NumPiecesInRow(ROWA)
-    cnt += NumPiecesInRow(ROWB)
-    cnt += NumPiecesInRow(ROWC)
-    cnt += NumPiecesInRow(ROWD)
-    cnt += NumPiecesInRow(ROWE)
-    cnt += NumPiecesInRow(ROWF)
-    cnt += NumPiecesInRow(ROWG)
-    cnt += NumPiecesInRow(ROWH)
-    cnt += NumPiecesInRow(ROWI)
-    cnt += NumPiecesInRow(ROWJ)
-    ; The expected number of ship pieces is 17 (=5+4+3+3+2)
-    if cnt == 17 {
-        valid := TRUE
-        ->
-    }
-    valid := FALSE
+
+; Flashing prints the ASCII txt to the screen in FLASH mode.
+let Flashing = sub <- [txt: text @ PTR] {
+    FLASH()
+    Print(txt)
+    NORMAL()
 }
+
 
 let Input = sub -> [ready: bool] {
     ready := FALSE
@@ -394,47 +350,47 @@ let Input = sub -> [ready: bool] {
         ->
     }
     if key == LEFT {
-        if ship.x > 0 {
-            ship.x -= 1
-            screenDirty := TRUE
+        if ship.X > 0 {
+            ship.X -= 1
+            ScreenDirty := TRUE
         }
         ->
     }
     if key == RIGHT {
         var rightmost: int
-        rightmost := ship.x
-        if ship.horizontal <> FALSE {
-            rightmost += ship.size
+        rightmost := ship.X
+        if ship.Horizontal <> FALSE {
+            rightmost += ship.Size
             rightmost -= 1
         }
         if rightmost < 9 {
-            ship.x += 1
-            screenDirty := TRUE
+            ship.X += 1
+            ScreenDirty := TRUE
         }
         ->
     }
     if key == DOWN {
         var bottommost: int
-        bottommost := ship.y
-        if ship.horizontal == FALSE {
-            bottommost += ship.size
+        bottommost := ship.Y
+        if ship.Horizontal == FALSE {
+            bottommost += ship.Size
             bottommost -= 1
         }
         if bottommost < 9 {
-            ship.y += 1
-            screenDirty := TRUE
+            ship.Y += 1
+            ScreenDirty := TRUE
         }
         ->
     }
     if key == UP {
-        if ship.y > 0 {
-            ship.y -= 1
-            screenDirty := TRUE
+        if ship.Y > 0 {
+            ship.Y -= 1
+            ScreenDirty := TRUE
         }
         ->
     }
     if key == TAB {
-        screenDirty := TRUE
+        ScreenDirty := TRUE
         CurrentShip += cShipSize
 
         var outofbounds: Ship^ @ PTR
@@ -445,13 +401,13 @@ let Input = sub -> [ready: bool] {
         ->
     }
     if key == `R {  ; Rotate
-        ship.horizontal != ship.horizontal
-        screenDirty := TRUE
-        if ship.horizontal == FALSE {
-            ship.y -= Over10By(ship.y, ship.size)
+        ship.Horizontal != ship.Horizontal
+        ScreenDirty := TRUE
+        if ship.Horizontal == FALSE {
+            ship.Y -= Over10By(ship.Y, ship.Size)
         }
-        if ship.horizontal <> FALSE {
-            ship.x -= Over10By(ship.x, ship.size)
+        if ship.Horizontal <> FALSE {
+            ship.X -= Over10By(ship.X, ship.Size)
         }
         ->
     }
@@ -474,29 +430,97 @@ let Input = sub -> [ready: bool] {
     }
 }
 
-let EnemySetup = sub {
-    var [
-        position: int
-        initPos: InitPos^ @ SRC
-        ship: Ship^ @ DST
-        i: int
-    ]
-    position := Random
-    position &= %00000011  ; Only 4 choices
-    initPos := EInitPos_0
-    while position > 0 {
-        initPos += 15  ; sizeof InitPos (3) times ships (5)
-        position -= 1
-    }
-    ship := EShips_0
+
+let Notify = sub <- [txt: text @ PTR] {
+    SetCursorRow(22)
+    Print(txt)
+}
+
+
+let NumPiecesInRow = sub <- [row: byte^ @ PTR] -> [cnt: int] {
+    cnt := 0
+    var i: int
     i := 0
-    while i < cShipsCnt {
-        ship.x := initPos.X
-        ship.y := initPos.Y
-        ship.horizontal := initPos.Horizontal
+    while i < 10 {
+        if row_i <> SPACE {
+            cnt += 1
+        }
         i += 1
-        ship += cShipSize
-        initPos += 3  ; sizeof InitPos
+    }
+}
+
+
+let Over10By = sub <- [base: int, added: int] -> [over: int] {
+    base += added
+    if base <= 10 {
+        over := 0
+        ->
+    }
+    base -= 10
+    over := base
+}
+
+
+let Play = sub {
+    HOME()
+    Print("READY")
+}
+
+
+; Print writes the ASCII txt to the screen.
+let Print = sub <- [txt: text @ PTR] {
+    var i: int @ Y
+    i := 0
+    while txt_i <> 0 {
+        COUT(txt_i)
+        i += 1
+    }
+}
+
+
+let PrintAddress = sub <- [subr: byte^ @ $FC] {
+    var addr: byte^2 @ $FC
+    PRBYTE(addr_1)
+    PRBYTE(addr_0)
+}
+
+
+let PrintInstructions = sub {
+    WNDLFT := 15
+    SetCursor(col=1, row=1)
+    Print("PLACE YOUR SHIPS")
+    CROUT()
+    CROUT()
+    Print("ARROWS - MOVE")
+    CROUT()
+    Print("   TAB - SWITCH")
+    CROUT()
+    Print("     R - ROTATE")
+    CROUT()
+    Print(" SPACE - DONE")
+    CROUT()
+    Print("   ESC - QUIT")
+    CROUT()
+    WNDLFT := 0
+    SetCursor(col=0, row=0)
+}
+
+; ReadKey waits for keyboard input and returns the key pressed.
+let ReadKey = sub -> [key: byte @ A] {
+    Random += 1
+    while KYBD < $80 {
+    }
+    STROBE := key
+}
+
+; Redraws the screen if ScreenDirty is set.
+let Redraw = sub {
+    if ScreenDirty <> 0 {
+        HOME()
+        DrawGrid()
+        DrawShips(Ships)
+        PrintInstructions()
+        ScreenDirty := 0
     }
 }
 
@@ -514,9 +538,24 @@ let Setup = sub {
     ReadKey()
 }
 
-let Play = sub {
-    HOME()
-    Print("READY")
+let TryPlay = sub -> [valid: bool] {
+    var cnt: int
+    cnt := NumPiecesInRow(ROWA)
+    cnt += NumPiecesInRow(ROWB)
+    cnt += NumPiecesInRow(ROWC)
+    cnt += NumPiecesInRow(ROWD)
+    cnt += NumPiecesInRow(ROWE)
+    cnt += NumPiecesInRow(ROWF)
+    cnt += NumPiecesInRow(ROWG)
+    cnt += NumPiecesInRow(ROWH)
+    cnt += NumPiecesInRow(ROWI)
+    cnt += NumPiecesInRow(ROWJ)
+    ; The expected number of ship pieces is 17 (=5+4+3+3+2)
+    if cnt == 17 {
+        valid := TRUE
+        ->
+    }
+    valid := FALSE
 }
 
 ; Program entry point
@@ -549,7 +588,7 @@ let main = sub {
 
     ;ReadKey()
 
-    screenDirty := TRUE
+    ScreenDirty := TRUE
 
     ; Initialize ships
     Copy(Ships, PSHIPS, 30)
@@ -568,9 +607,9 @@ PSHIPS	DFB 0,0,0,5,$B5,5
 	DFB 3,0,0,3,$C4,3
 	DFB 4,0,$FF,2,$B2,2
 * 4 POSSIBLE ENEMY STARTING POSITIONS
-* EInitPos [4]pos
-* sizeof(EInitPos[0])== 3*5 = 15
-EInitPos	DFB 5,5,1
+* EINITPOS [4]pos
+* sizeof(EINITPOS[0])== 3*5 = 15
+EINITPOS	DFB 5,5,1
 	DFB 7,6,0
 	DFB 1,4,0
 	DFB 7,1,0
