@@ -168,10 +168,33 @@ appropriate addressing mode.
 ## Adding type information
 
 Inspired by TypeScript, the language started out as a markup for 6502 assembly.
-This can be seen in subroutine declarations. Take the Apple II ROM subroutine
-`PRNTAX` found at `$F941`. It "Prints A-Reg as Two-Digit Hex Number" followed
-by X. This is declared in A2 as: `use PRNTAX: sub <- [val: word @ AX] @ $F941`.
+This can be seen in subroutine declarations.
+
+Take the Apple II ROM subroutine `PRNTAX` found at `$F941`.
+It "Prints A-Reg as Two-Digit Hex Number" followed by `X`.
+This is declared in A2 as: `use PRNTAX: sub <- [val: word @ AX] @ $F941`.
 It can then be called like: `PRNTAX($BEAD)`.
+
+Normally, such assembly routines and their inputs and outputs are documented in
+English prose or perhaps some arbitrary convention or not at all!
+Arguably the most useful aspect of A2 is this formalization of declarations of
+existing assembly code.
+
+
+## Register-binding and Location-binding
+
+The `PRNTAX` example illustrates both **register-binding** and
+**location-binding**.
+In short, a variable can _live_ at a fixed memory location or in a register.
+For register-bound variables, you can use a single register—`A`, `X`, or `Y`—or
+two registers like `AX` in which the most-significant byte is stored in `A` and
+the other byte in `X`.
+
+The compiler is aware of the binding and generates the appropriate operations.
+One neat example is that an `X`-bound local variable being passed to an
+`A`-bound parameter only needs one operation: `TXA`.
+Such direct control of the underlying hardware should be used cautiously though;
+it's very easy to clobber a register.
 
 
 ## Omitted Features
@@ -195,7 +218,7 @@ On most systems, `byte` and `char` are essentially equivalent, but the Apple II
 line of computers uses what is often called "High-ASCII" since the 8th-bit
 needs to be set for a character to display normally in Apple II Text Mode.
 In ASCII, an uppercase A is `$41` in hexadecimal, but in High-ASCII,
-it is $C1.
+it is `$C1`.
 
 Currently, the compiler treats the two types as a `byte`, but does output text
 and character literals in High-ASCII.
