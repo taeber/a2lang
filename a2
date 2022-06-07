@@ -33,9 +33,7 @@ function build
             ;;
     esac
 
-    pushd src/
     make
-    popd
     compile $*
     deps
     deps/a2asm <(compile $*) >$AOUT
@@ -46,15 +44,13 @@ function build
 function clean
 {
     rm -rf ./deps ./build
-    pushd src/
     make clean
-    popd
 }
 
 function compile
 {
     set -o pipefail
-    src/compile $* | expand -t16
+    ./compile $* | expand -t16
     set +o pipefail
 }
 
