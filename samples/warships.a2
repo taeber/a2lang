@@ -110,6 +110,7 @@ let Position = [
 
 use [
     Copy: sub <- [dst: byte^ @ DST, src: byte^ @ SRC, size: word]
+    Fill: sub <- [dst: byte^ @ DST, val: byte, size: word]
 
     SetCursor: sub <- [col: int @ A, row: int @ Y]
     ; SetCursorCol places the horizontal cursor (CH) at col.
@@ -127,6 +128,16 @@ let Copy = sub <- [dst: byte^ @ DST, src: byte^ @ SRC, size: word] {
     i := 0
     while i < size {
         dst_i := src_i
+        i += 1
+    }
+}
+
+
+let Fill = sub <- [dst: byte^ @ DST, val: byte, size: word] {
+    var i: int
+    i := 0
+    while i < size {
+        dst_i := val
         i += 1
     }
 }
@@ -169,18 +180,23 @@ let (
 )
 
 use [
-    PSHIPS  : Ship^cShipsCnt
+    DEFSHIPS  : Ship^cShipsCnt
     EINITPOS: InitPos^cEInitPosSize
 ]
 
 var [
-    Ships      : Ship^cShipsCnt   ; @ PSHIPS TODO: allow this type of var decl
+    Ships      : Ship^cShipsCnt   ; @ DEFSHIPS TODO: allow this type of var decl
     EShips     : Ship^cShipsCnt  ; Enemy ships
     CurrentShip: Ship^ @ $FE
 
-    Random: byte
+    Random: byte @ RNDL
 
     ScreenDirty: bool
+
+    PTries: byte^100
+    ETries: byte^100
+
+    PCursor: Position
 ]
 
 use [
@@ -190,13 +206,15 @@ use [
     Flashing: sub <- [txt: text @ PTR]
     Notify  : sub <- [txt: text @ PTR]
 
-    Input  : sub -> [ready: bool]
-    ReadKey: sub -> [key: byte @ A]
+    Input           : sub -> [ready: bool]
+    InputPlayersTurn: sub
+    ReadKey         : sub -> [key: byte @ A]
 
-    Redraw   : sub
-    DrawShip : sub <- [ship: Ship^ @ PTR]
-    DrawShips: sub <- [ship: Ship^ @ PTR]
-    DrawGrid : sub
+    Redraw    : sub
+    DrawShip  : sub <- [ship: Ship^ @ PTR]
+    DrawShips : sub <- [ship: Ship^ @ PTR]
+    DrawGrid  : sub
+    DrawCursor: sub
 
     Over10By      : sub <- [base: int, added: int] -> [over: int]
     NumPiecesInRow: sub <- [row: byte^ @ PTR] -> [cnt: int]
@@ -205,10 +223,18 @@ use [
     Setup     : sub
     EnemySetup: sub
 
+    PrintSetupInstructions: sub
+    PrintTurnInstructions : sub
+
     Play: sub
 
     main: sub
 ]
+
+
+let DrawCursor = sub {
+    SetCursor(col=PCursor.H, row=PCursor.V)
+}
 
 
 let DrawGrid = sub {
@@ -431,6 +457,49 @@ let Input = sub -> [ready: bool] {
 }
 
 
+let InputPlayersTurn = sub {
+    var key: byte @ A
+    key := ReadKey()
+    if key == ESCAPE {
+        EXIT()
+        ->
+    }
+    if key == LEFT {
+        if PCursor.H > 1 {
+            PCursor.H -= 1
+            ScreenDirty := TRUE
+        }
+        ->
+    }
+    if key == RIGHT {
+        if PCursor.H < 10 {
+            PCursor.H += 1
+            ScreenDirty := TRUE
+        }
+        ->
+    }
+    if key == UP {
+        if PCursor.V > 1 {
+            PCursor.V -= 1
+            ScreenDirty := TRUE
+        }
+        ->
+    }
+    if key == DOWN {
+        if PCursor.V < 10 {
+            PCursor.V += 1
+            ScreenDirty := TRUE
+        }
+        ->
+    }
+    ; TODO: why do I need this conditional for things not to crash when I press
+    ; some other random key?
+    if key <> ESCAPE {
+        ->
+    }
+}
+
+
 let Notify = sub <- [txt: text @ PTR] {
     SetCursorRow(22)
     Print(txt)
@@ -462,8 +531,15 @@ let Over10By = sub <- [base: int, added: int] -> [over: int] {
 
 
 let Play = sub {
-    HOME()
-    Print("READY")
+    if ScreenDirty <> 0 {
+        HOME()
+        PrintTurnInstructions()
+        DrawGrid()
+        DrawCursor()
+        ScreenDirty := FALSE
+    }
+    InputPlayersTurn()
+    Play()
 }
 
 
@@ -485,7 +561,7 @@ let PrintAddress = sub <- [subr: byte^ @ $FC] {
 }
 
 
-let PrintInstructions = sub {
+let PrintSetupInstructions = sub {
     WNDLFT := 15
     SetCursor(col=1, row=1)
     Print("PLACE YOUR SHIPS")
@@ -505,12 +581,40 @@ let PrintInstructions = sub {
     SetCursor(col=0, row=0)
 }
 
+
+let PrintTurnInstructions = sub {
+    WNDLFT := 15
+    SetCursor(col=1, row=1)
+    Print("   ")
+    INVERSE()
+    Print("YOUR TURN")
+    NORMAL()
+    CROUT()
+    CROUT()
+    Print("ARROWS - AIM")
+    CROUT()
+    Print(" ENTER - FIRE")
+    CROUT()
+    Print("   A-J - ROW")
+    CROUT()
+    Print("   1-9 - COLUMN")
+    CROUT()
+    Print("     0 - COLUMN 10")
+    CROUT()
+    Print("   ESC - QUIT")
+    CROUT()
+    WNDLFT := 0
+    SetCursor(col=0, row=0)
+}
+
+
 ; ReadKey waits for keyboard input and returns the key pressed.
 let ReadKey = sub -> [key: byte @ A] {
-    Random += 1
-    while KYBD < $80 {
-    }
-    STROBE := key
+    ;Random += 1
+    RDKEY()
+    ;while KYBD < $80 {
+    ;}
+    ;STROBE := key
 }
 
 ; Redraws the screen if ScreenDirty is set.
@@ -519,8 +623,8 @@ let Redraw = sub {
         HOME()
         DrawGrid()
         DrawShips(Ships)
-        PrintInstructions()
-        ScreenDirty := 0
+        PrintSetupInstructions()
+        ScreenDirty := FALSE
     }
 }
 
@@ -532,10 +636,11 @@ let Setup = sub {
         ready := Input()
     }
     EnemySetup()
-    HOME()
-    DrawGrid()
-    DrawShips(EShips)
-    ReadKey()
+    ; TODO: remove this debugging section
+    ; HOME()
+    ; DrawGrid()
+    ; DrawShips(EShips)
+    ; ReadKey()
 }
 
 let TryPlay = sub -> [valid: bool] {
@@ -590,18 +695,23 @@ let main = sub {
 
     ScreenDirty := TRUE
 
-    ; Initialize ships
-    Copy(Ships, PSHIPS, 30)
-    Copy(EShips, PSHIPS, 30)
+    ; Initialize ships and tries
+    Copy(Ships, DEFSHIPS, 30)
+    Fill(PTries, SPACE, 100)
+    Copy(EShips, DEFSHIPS, 30)
+    Fill(ETries, SPACE, 100)
 
     CurrentShip := Ships_0
 
     Setup()
+    ScreenDirty := TRUE
+    PCursor.H := 1
+    PCursor.V := 1
     Play()
 }
 
 asm {
-PSHIPS	DFB 0,0,0,5,$B5,5
+DEFSHIPS	DFB 0,0,0,5,$B5,5
 	DFB 1,0,0,4,$B4,4
 	DFB 2,0,0,3,$B3,3
 	DFB 3,0,0,3,$C4,3
