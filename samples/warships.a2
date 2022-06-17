@@ -120,11 +120,15 @@ use [
 ]
 
 
-var Cursor: Position @ CH
+var [
+    Cursor: Position @ CH
+]
 
 
 let Copy = sub <- [dst: byte^ @ DST, src: byte^ @ SRC, size: word] {
-    var i: int
+    var [
+        i: int
+    ]
     i := 0
     while i < size {
         dst_i := src_i
@@ -134,7 +138,9 @@ let Copy = sub <- [dst: byte^ @ DST, src: byte^ @ SRC, size: word] {
 
 
 let Fill = sub <- [dst: byte^ @ DST, val: byte, size: word] {
-    var i: int
+    var [
+        i: int
+    ]
     i := 0
     while i < size {
         dst_i := val
@@ -274,7 +280,9 @@ let DrawShip = sub <- [ship: Ship^ @ PTR] {
     CV += 1
     TABV()
 
-    var i: int
+    var [
+        i: int
+    ]
     i := 0
     while i < ship.Size {
         COUT(ship.Graphic)
@@ -358,10 +366,12 @@ let Flashing = sub <- [txt: text @ PTR] {
 let Input = sub -> [ready: bool] {
     ready := FALSE
 
-    var ship: Ship^ @ PTR
+    var [
+        ship: Ship^ @ PTR
+        key: byte @ A
+    ]
     ship := CurrentShip
 
-    var key: byte @ A
     key := ReadKey()
     if key == ESCAPE {
         EXIT()
@@ -383,7 +393,9 @@ let Input = sub -> [ready: bool] {
         ->
     }
     if key == RIGHT {
-        var rightmost: int
+        var [
+            rightmost: int
+        ]
         rightmost := ship.X
         if ship.Horizontal <> FALSE {
             rightmost += ship.Size
@@ -396,7 +408,9 @@ let Input = sub -> [ready: bool] {
         ->
     }
     if key == DOWN {
-        var bottommost: int
+        var [
+            bottommost: int
+        ]
         bottommost := ship.Y
         if ship.Horizontal == FALSE {
             bottommost += ship.Size
@@ -419,7 +433,9 @@ let Input = sub -> [ready: bool] {
         ScreenDirty := TRUE
         CurrentShip += cShipSize
 
-        var outofbounds: Ship^ @ PTR
+        var [
+            outofbounds: Ship^ @ PTR
+        ]
         outofbounds := Ships_cShipsSize
         if CurrentShip == outofbounds {
             CurrentShip := Ships_0
@@ -458,7 +474,9 @@ let Input = sub -> [ready: bool] {
 
 
 let InputPlayersTurn = sub {
-    var key: byte @ A
+    var [
+        key: byte @ A
+    ]
     key := ReadKey()
     if key == ESCAPE {
         EXIT()
@@ -508,7 +526,9 @@ let Notify = sub <- [txt: text @ PTR] {
 
 let NumPiecesInRow = sub <- [row: byte^ @ PTR] -> [cnt: int] {
     cnt := 0
-    var i: int
+    var [
+        i: int
+    ]
     i := 0
     while i < 10 {
         if row_i <> SPACE {
@@ -545,7 +565,9 @@ let Play = sub {
 
 ; Print writes the ASCII txt to the screen.
 let Print = sub <- [txt: text @ PTR] {
-    var i: int @ Y
+    var [
+        i: int @ Y
+    ]
     i := 0
     while txt_i <> 0 {
         COUT(txt_i)
@@ -555,7 +577,9 @@ let Print = sub <- [txt: text @ PTR] {
 
 
 let PrintAddress = sub <- [subr: byte^ @ $FC] {
-    var addr: byte^2 @ $FC
+    var [
+        addr: byte^2 @ $FC
+    ]
     PRBYTE(addr_1)
     PRBYTE(addr_0)
 }
@@ -629,7 +653,9 @@ let Redraw = sub {
 }
 
 let Setup = sub {
-    var ready: bool
+    var [
+        ready: bool
+    ]
     ready := FALSE
     while ready == FALSE {
         Redraw()
@@ -644,7 +670,9 @@ let Setup = sub {
 }
 
 let TryPlay = sub -> [valid: bool] {
-    var cnt: int
+    var [
+        cnt: int
+    ]
     cnt := NumPiecesInRow(ROWA)
     cnt += NumPiecesInRow(ROWB)
     cnt += NumPiecesInRow(ROWC)
@@ -668,7 +696,9 @@ let main = sub {
     INIT()
     HOME()
 
-    var key: byte
+    var [
+        key: byte
+    ]
 
     SetCursorCol(15)
     Print("WARSHIPS")
