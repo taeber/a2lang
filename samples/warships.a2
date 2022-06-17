@@ -112,6 +112,8 @@ use [
     Copy: sub <- [dst: byte^ @ DST, src: byte^ @ SRC, size: word]
     Fill: sub <- [dst: byte^ @ DST, val: byte, size: word]
 
+    Multiply: sub <- [multiplier: byte, multiplicand: byte] -> [product: byte]
+
     SetCursor: sub <- [col: int @ A, row: int @ Y]
     ; SetCursorCol places the horizontal cursor (CH) at col.
     SetCursorCol: sub <- [col: int @ A]
@@ -145,6 +147,15 @@ let Fill = sub <- [dst: byte^ @ DST, val: byte, size: word] {
     while i < size {
         dst_i := val
         i += 1
+    }
+}
+
+
+let Multiply = sub <- [multiplier: byte, multiplicand: byte] -> [product: byte] {
+    product := 0
+    while multiplier > 0 {
+        product += multiplicand
+        multiplier -= 1
     }
 }
 
@@ -220,14 +231,19 @@ use [
     DrawShip  : sub <- [ship: Ship^ @ PTR]
     DrawShips : sub <- [ship: Ship^ @ PTR]
     DrawGrid  : sub
+    DrawTries : sub
     DrawCursor: sub
+
+    Fire      : sub <- [ship: Ship^ @ PTR]
+    FireAt    : sub <- [ship: Ship^ @ SRC, screen: Position] -> [hit: bool]
+    ToLocation: sub <- [screen: Position] -> [loc: byte]
 
     Over10By      : sub <- [base: int, added: int] -> [over: int]
     NumPiecesInRow: sub <- [row: byte^ @ PTR] -> [cnt: int]
     TryPlay       : sub -> [valid: bool]
 
     Setup     : sub
-    EnemySetup: sub
+    SetupEnemy: sub
 
     PrintSetupInstructions: sub
     PrintTurnInstructions : sub
@@ -328,29 +344,34 @@ let DrawShips = sub <- [ship: Ship^ @ PTR] {
 }
 
 
-let EnemySetup = sub {
+let DrawTries = sub {
     var [
-        position: int
-        initPos: InitPos^ @ SRC
-        ship: Ship^ @ DST
-        i: int
+        x  : int
+        y  : int
+        try: char
     ]
-    position := Random
-    position &= %00000011  ; Only 4 choices
-    initPos := EINITPOS_0
-    while position > 0 {
-        initPos += 15  ; sizeof InitPos (3) times ships (5)
-        position -= 1
-    }
-    ship := EShips_0
-    i := 0
-    while i < cShipsCnt {
-        ship.X := initPos.X
-        ship.Y := initPos.Y
-        ship.Horizontal := initPos.Horizontal
-        i += 1
-        ship += cShipSize
-        initPos += 3  ; sizeof InitPos
+
+    SetCursor(col=1, row=1)
+
+    x := 0
+    y := 0
+    while x < 100 {
+        if y == 10 {
+            y := 0
+
+            CH := 1
+            CV += 1
+            TABV()
+        }
+
+        try := PTries_x
+        if try == 0 {
+            try := SPACE
+        }
+        COUT(try)
+
+        x += 1
+        y += 1
     }
 }
 
@@ -360,6 +381,86 @@ let Flashing = sub <- [txt: text @ PTR] {
     FLASH()
     Print(txt)
     NORMAL()
+}
+
+
+let Fire = sub <- [ship: Ship^ @ PTR] {
+    var [
+        loc : int
+        val : char
+        i   : int
+        hit : bool
+    ]
+
+    loc := ToLocation(PCursor)
+    val := PTries_loc
+    if val <> SPACE {
+        ; Already tried
+        ->
+    }
+
+    i := 0
+    while i < cShipsCnt {
+        hit := FireAt(ship, PCursor)
+        if hit <> FALSE {
+            PTries_loc := `X
+            ship.Remaining -= 1
+            if ship.Remaining == 0 {
+                Notify("Sank!")
+                ->
+            }
+            Notify("Hit!")
+            ->
+        }
+        ship += cShipSize
+        i += 1
+    }
+
+    PTries_loc := `-
+    Notify("Miss!")
+}
+
+
+let FireAt = sub <- [ship: Ship^ @ SRC, screen: Position] -> [hit: bool] {
+    var [
+        loc: int
+        col: int
+        row: int
+    ]
+    col := screen.H
+    col -= 1
+    row := screen.V
+    row -= 1
+    hit := FALSE
+    if ship.Horizontal == FALSE {
+        ; Vertical
+        if ship.X <> col {
+            ->
+        }
+
+        loc := ship.Y
+        if loc > row {
+            ->
+        }
+
+        loc += ship.Size
+        if row < loc {
+            hit := TRUE
+        }
+        ->
+    }
+    ; Horizontal
+    if ship.Y <> row {
+        ->
+    }
+    loc := ship.X
+    if loc > col {
+        ->
+    }
+    loc += ship.Size
+    if col < loc {
+        hit := TRUE
+    }
 }
 
 
@@ -510,6 +611,10 @@ let InputPlayersTurn = sub {
         }
         ->
     }
+    if key == RETURN {
+        Fire(EShips)
+        ->
+    }
     ; TODO: why do I need this conditional for things not to crash when I press
     ; some other random key?
     if key <> ESCAPE {
@@ -519,7 +624,7 @@ let InputPlayersTurn = sub {
 
 
 let Notify = sub <- [txt: text @ PTR] {
-    SetCursorRow(22)
+    SetCursor(row=22, col=1)
     Print(txt)
 }
 
@@ -555,6 +660,9 @@ let Play = sub {
         HOME()
         PrintTurnInstructions()
         DrawGrid()
+        ; TODO: remove next line
+            DrawShips(EShips)
+        DrawTries()
         DrawCursor()
         ScreenDirty := FALSE
     }
@@ -617,7 +725,7 @@ let PrintTurnInstructions = sub {
     CROUT()
     Print("ARROWS - AIM")
     CROUT()
-    Print(" ENTER - FIRE")
+    Print("RETURN - FIRE")
     CROUT()
     Print("   A-J - ROW")
     CROUT()
@@ -661,13 +769,41 @@ let Setup = sub {
         Redraw()
         ready := Input()
     }
-    EnemySetup()
+    SetupEnemy()
     ; TODO: remove this debugging section
-    ; HOME()
-    ; DrawGrid()
-    ; DrawShips(EShips)
-    ; ReadKey()
+    HOME()
+    DrawGrid()
+    DrawShips(EShips)
+    ReadKey()
 }
+
+
+let SetupEnemy = sub {
+    var [
+        position: int
+        initPos: InitPos^ @ SRC
+        ship: Ship^ @ DST
+        i: int
+    ]
+    position := Random
+    position &= %00000011  ; Only 4 choices
+    initPos := EINITPOS_0
+    while position > 0 {
+        initPos += 15  ; sizeof InitPos (3) times ships (5)
+        position -= 1
+    }
+    ship := EShips_0
+    i := 0
+    while i < cShipsCnt {
+        ship.X := initPos.X
+        ship.Y := initPos.Y
+        ship.Horizontal := initPos.Horizontal
+        i += 1
+        ship += cShipSize
+        initPos += 3  ; sizeof InitPos
+    }
+}
+
 
 let TryPlay = sub -> [valid: bool] {
     var [
@@ -690,6 +826,16 @@ let TryPlay = sub -> [valid: bool] {
     }
     valid := FALSE
 }
+
+
+let ToLocation = sub <- [screen: Position] -> [loc: byte] {
+    loc := screen.V
+    loc -= 1
+    loc := Multiply(loc, 10)
+    loc += screen.H
+    loc -= 1
+}
+
 
 ; Program entry point
 let main = sub {
