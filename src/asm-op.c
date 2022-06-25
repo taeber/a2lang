@@ -1140,7 +1140,13 @@ struct Operand *OpAbsolute(const char *base, uint8_t size)
 
 struct Operand *OpImmediate(char *value, uint8_t size)
 {
-    return Operand(MODE_IMMEDIATE, size, NULL, NULL, value, NULL);
+    if (size == 2) {
+        return Operand(MODE_IMMEDIATE, size, NULL, NULL, value, hi(value));
+    }
+    if (size == 1) {
+        return Operand(MODE_IMMEDIATE, size, NULL, NULL, value, NULL);
+    }
+    fatalf("%s: immediate size of %s must be 1 or 2; got %u", __func__, value, size);
 }
 
 struct Operand *OpImmediateNumber(uint16_t number)
