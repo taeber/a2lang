@@ -1,0 +1,1052 @@
+;-]
+; WARSHIPS
+;   A game for Roona
+;
+; Copyright 2022 Taeber Rapczak <taeber@rapczak.com>
+;-]
+
+;;; Apple II Section
+
+asm {
+	ORG $2000
+	JSR main
+	JMP EXIT
+}
+
+; Apple II monitor subroutines
+use [
+    EXIT : sub @ $3D0
+
+    INIT: sub @ $FB2F
+    HOME: sub @ $FC58
+
+    COUT : sub <- [ch: char @ A]   @ $FDED
+    CROUT: sub @ $FD8E
+
+    NORMAL : sub @ $F273
+    INVERSE: sub @ $F277
+    FLASH  : sub @ $F280
+
+    TABV: sub <- [row: int @ A]   @ $FB5B
+
+    PRBYTE: sub <- [byte: byte @ A] @ $FDDA
+
+    ; I guess the RDKEY sub isn't reliable on the unenhanced Apple //e.
+    ;   https://mirrors.apple2.org.za/Apple%20II%20Documentation%20Project/Computers/Apple%20II/Apple%20II/Documentation/Misc%20%23010%2080-col%20GetChar.pdf
+    RDKEY: sub -> [key: byte @ A]  @ $FD0C
+]
+
+; Apple II Zero Page variables
+var [
+    WNDLFT : byte @ $20  ; Left column of scroll window
+    WNDWDTH: byte @ $21  ; Right column of scroll window
+    WNDTOP : byte @ $22  ; Top row of scroll window
+    WNDBTM : byte @ $23  ; Bottom row of scroll window
+    CH     : byte @ $24  ; Cursor's horizontal position
+    CV     : byte @ $25  ; Cursor's vertical position
+]
+
+use [
+    RNDL: byte @ $4E    ; Random value, low
+    RNDH: byte @ $4F    ; Random value, high
+]
+
+let (
+    ESCAPE  = $9B
+    SPACE   = $A0
+    RETURN  = $8D
+    LEFT    = $88
+    RIGHT   = $95
+    DOWN    = $8A
+    UP      = $8B
+    TAB     = $89
+)
+
+let (
+    COLS = 40
+)
+
+var [
+    LINE1 : byte^COLS @ $400 ; Top Left
+
+    KYBD  : byte @ $C000
+    STROBE: byte @ $C010
+
+    ROWA  : byte^10 @ $481
+    ROWB  : byte^10 @ $501
+    ROWC  : byte^10 @ $581
+    ROWD  : byte^10 @ $601
+    ROWE  : byte^10 @ $681
+    ROWF  : byte^10 @ $701
+    ROWG  : byte^10 @ $781
+    ROWH  : byte^10 @ $429
+    ROWI  : byte^10 @ $4A9
+    ROWJ  : byte^10 @ $529
+]
+
+
+;;; Non–game-specific code
+
+; Boolean literals
+let (
+    bool  = :byte
+    FALSE = 0
+    TRUE  = -1
+)
+
+; Pointers
+var [
+    PTR: word @ $06
+
+    DST: word @ $06
+    SRC: word @ $08
+
+    PTR1: word @ $FC
+    PTR2: word @ $FE
+]
+
+; Screen position
+let Position = [
+    H: int
+    V: int
+]
+
+
+use [
+    Copy: sub <- [dst: byte^ @ DST, src: byte^ @ SRC, size: word]
+    Fill: sub <- [dst: byte^ @ DST, val: byte, size: word]
+
+    Multiply: sub <- [multiplier: byte, multiplicand: byte] -> [product: byte]
+
+    SetCursor: sub <- [col: int @ A, row: int @ Y]
+    ; SetCursorCol places the horizontal cursor (CH) at col.
+    SetCursorCol: sub <- [col: int @ A]
+    ; SetCursorRow places the vertical cursor (CH) at row.
+    SetCursorRow: sub <- [row: int @ A] @ TABV
+]
+
+
+var [
+    Cursor: Position @ CH
+]
+
+
+let Copy = sub <- [dst: byte^ @ DST, src: byte^ @ SRC, size: word] {
+    var [
+        i: int
+    ]
+    i := 0
+    while i < size {
+        dst_i := src_i
+        i += 1
+    }
+}
+
+
+let Fill = sub <- [dst: byte^ @ DST, val: byte, size: word] {
+    var [
+        i: int
+    ]
+    i := 0
+    while i < size {
+        dst_i := val
+        i += 1
+    }
+}
+
+
+let Multiply = sub <- [multiplier: byte, multiplicand: byte] -> [product: byte] {
+    product := 0
+    while multiplier > 0 {
+        product += multiplicand
+        multiplier -= 1
+    }
+}
+
+
+let SetCursor = sub <- [col: int @ A, row: int @ Y] {
+    Cursor.H := col
+    SetCursorRow(row)
+}
+
+
+let SetCursorCol = sub <- [col: int @ A] {
+    Cursor.H := col
+}
+
+;;; Game code
+
+let (
+    Ship = [
+        X           : int
+        Y           : int
+        Horizontal  : bool
+        Size        : int
+        Graphic     : char
+        Remaining   : int
+    ]
+    cShipSize  = 6  ; TODO: have a builtin size() and len()
+    cShipsCnt  = 5
+    cShipsSize = 30 ; 6*5
+)
+
+let (
+    InitPos = [
+        X         : int
+        Y         : int
+        Horizontal: bool
+    ]
+    cInitPosSize = 3
+    cEInitPosSize = 20   ; 20 = 4pos * 5ships
+)
+
+let (
+    cHitsMax = 17   ; 17 = 5+4+3+3+2
+)
+
+let (
+    FireResult = :int
+    FireMissed = 0
+    FireHit    = 1
+    FireTried  = 2
+)
+use [
+    Fire: sub <- [ship: Ship^ @ PTR1, pos: Position, tries: byte^ @ PTR2]
+              -> [hit: FireResult]
+    FireAt    : sub <- [ship: Ship^ @ SRC, screen: Position] -> [hit: bool]
+    ToLocation: sub <- [screen: Position] -> [loc: byte]
+    ; Picks random .H and .V values between and including 1 and 10.
+    Random1to10: sub -> [val: int]
+]
+
+use [
+    DEFSHIPS: Ship^cShipsCnt
+    EINITPOS: InitPos^cEInitPosSize
+]
+
+var [
+    Ships      : Ship^cShipsCnt   ; @ DEFSHIPS TODO: allow this type of var decl
+    EShips     : Ship^cShipsCnt  ; Enemy ships
+    CurrentShip: Ship^ @ $FE
+
+    Random: byte @ RNDL
+
+    ScreenDirty: bool
+
+    PTries: byte^100
+    ETries: byte^100
+
+    PHits: int
+    EHits: int
+
+    PCursor: Position
+    ECursor: Position
+]
+
+use [
+    PrintAddress: sub <- [subr: byte^ @ $FC]
+
+    Print   : sub <- [txt: text @ PTR]
+    Flashing: sub <- [txt: text @ PTR]
+    Notify  : sub <- [txt: text @ PTR]
+
+    Input           : sub -> [ready: bool]
+    InputPlayersTurn: sub -> [done: bool]
+    ReadKey         : sub -> [key: byte @ A]
+    WaitKey         : sub
+
+    Redraw    : sub
+    DrawShip  : sub <- [ship: Ship^ @ PTR]
+    DrawShips : sub <- [ship: Ship^ @ PTR]
+    DrawGrid  : sub
+    DrawTries : sub <- [tries: byte^ @ PTR]
+    DrawCursor: sub
+
+    Over10By      : sub <- [base: int, added: int] -> [over: int]
+    NumPiecesInRow: sub <- [row: byte^ @ PTR] -> [cnt: int]
+    TryPlay       : sub -> [valid: bool]
+
+    Setup     : sub
+    SetupEnemy: sub
+
+    PrintSetupInstructions: sub
+    PrintTurnInstructions : sub
+    PrintWaitInstructions : sub
+
+    Play     : sub
+    PlayEnemy: sub
+    Victory  : sub
+    Defeat   : sub
+
+    main: sub
+]
+
+
+let Defeat = sub {
+    Notify("DEFEAT! YOU LOST!")
+    ReadKey()
+    EXIT()
+}
+
+
+let DrawCursor = sub {
+    SetCursor(col=PCursor.H, row=PCursor.V)
+}
+
+
+let DrawGrid = sub {
+    SetCursor(row=0, col=1)
+    Print("12345678910")
+    SetCursor(row=1, col=0)
+    WNDWDTH := 1
+    Print("ABCDEFGHIJ")
+    WNDWDTH := 40
+}
+
+
+let DrawShip = sub <- [ship: Ship^ @ PTR] {
+    CH := ship.X
+    CV := ship.Y
+
+    CH += 1
+    CV += 1
+    TABV()
+
+    var [
+        i: int
+    ]
+    i := 0
+    while i < ship.Size {
+        COUT(ship.Graphic)
+        if ship.Horizontal == 0 {
+            CH -= 1
+            CV += 1
+            TABV()
+        }
+        i += 1
+    }
+}
+
+
+let DrawShips = sub <- [ship: Ship^ @ PTR] {
+    var [
+        prev: Position
+        curr: bool
+        i   : int
+    ]
+
+    prev.H := Cursor.H
+    prev.V := Cursor.V
+
+    curr := FALSE
+
+    i := 0
+    while i < cShipsCnt {
+        if ship == CurrentShip {
+            curr := TRUE
+        }
+        DrawShip(ship)
+        ship += cShipSize
+        i += 1
+    }
+
+    if curr <> FALSE {
+        INVERSE()
+        DrawShip(CurrentShip)
+        NORMAL()
+    }
+
+    SetCursor(col=prev.H, row=prev.V)
+}
+
+
+let DrawTries = sub <- [tries: byte^ @ PTR] {
+    var [
+        x  : int
+        y  : int
+        try: char
+    ]
+
+    SetCursor(col=1, row=1)
+
+    x := 0
+    y := 0
+    while x < 100 {
+        if y == 10 {
+            y := 0
+
+            CH := 1
+            CV += 1
+            TABV()
+        }
+
+        try := tries_x
+        if try == 0 {
+            try := SPACE
+        }
+        COUT(try)
+
+        x += 1
+        y += 1
+    }
+}
+
+
+; Flashing prints the ASCII txt to the screen in FLASH mode.
+let Flashing = sub <- [txt: text @ PTR] {
+    FLASH()
+    Print(txt)
+    NORMAL()
+}
+
+
+let Fire = sub
+    <- [
+        ship : Ship^ @ PTR1
+        pos  : Position
+        tries: byte^ @ PTR2
+    ]
+    -> [
+        hit: FireResult
+    ]
+{
+    var [
+        loc : int
+        val : char
+        i   : int
+        shipHit: bool
+    ]
+
+    hit := FireMissed
+
+    loc := ToLocation(pos)
+    val := tries_loc
+    if val <> SPACE {
+        ; Already tried
+        hit := FireTried
+        ->
+    }
+
+    i := 0
+    while i < cShipsCnt {
+        shipHit := FireAt(ship, pos)
+        if shipHit <> FALSE {
+            hit := FireHit
+            tries_loc := `X
+            ship.Remaining -= 1
+            if ship.Remaining == 0 {
+                Notify("SANK!")
+                ->
+            }
+            Notify("HIT!")
+            ->
+        }
+        ship += cShipSize
+        i += 1
+    }
+
+    tries_loc := `-
+    Notify("MISS!")
+}
+
+
+let FireAt = sub <- [ship: Ship^ @ SRC, screen: Position] -> [hit: bool] {
+    var [
+        loc: int
+        col: int
+        row: int
+    ]
+    col := screen.H
+    col -= 1
+    row := screen.V
+    row -= 1
+    hit := FALSE
+    if ship.Horizontal == FALSE {
+        ; Vertical
+        if ship.X <> col {
+            ->
+        }
+
+        loc := ship.Y
+        if loc > row {
+            ->
+        }
+
+        loc += ship.Size
+        if row < loc {
+            hit := TRUE
+        }
+        ->
+    }
+    ; Horizontal
+    if ship.Y <> row {
+        ->
+    }
+    loc := ship.X
+    if loc > col {
+        ->
+    }
+    loc += ship.Size
+    if col < loc {
+        hit := TRUE
+    }
+}
+
+
+let Input = sub -> [ready: bool] {
+    ready := FALSE
+
+    var [
+        ship: Ship^ @ PTR
+        key: byte @ A
+    ]
+    ship := CurrentShip
+
+    key := ReadKey()
+    if key == ESCAPE {
+        EXIT()
+        ->
+    }
+    if key == RETURN {
+        ready := TryPlay()
+        ->
+    }
+    if key == SPACE {
+        ready := TryPlay()
+        ->
+    }
+    if key == LEFT {
+        if ship.X > 0 {
+            ship.X -= 1
+            ScreenDirty := TRUE
+        }
+        ->
+    }
+    if key == RIGHT {
+        var [
+            rightmost: int
+        ]
+        rightmost := ship.X
+        if ship.Horizontal <> FALSE {
+            rightmost += ship.Size
+            rightmost -= 1
+        }
+        if rightmost < 9 {
+            ship.X += 1
+            ScreenDirty := TRUE
+        }
+        ->
+    }
+    if key == DOWN {
+        var [
+            bottommost: int
+        ]
+        bottommost := ship.Y
+        if ship.Horizontal == FALSE {
+            bottommost += ship.Size
+            bottommost -= 1
+        }
+        if bottommost < 9 {
+            ship.Y += 1
+            ScreenDirty := TRUE
+        }
+        ->
+    }
+    if key == UP {
+        if ship.Y > 0 {
+            ship.Y -= 1
+            ScreenDirty := TRUE
+        }
+        ->
+    }
+    if key == TAB {
+        ScreenDirty := TRUE
+        CurrentShip += cShipSize
+
+        var [
+            outofbounds: Ship^ @ PTR
+        ]
+        outofbounds := Ships_cShipsSize
+        if CurrentShip == outofbounds {
+            CurrentShip := Ships_0
+        }
+        ->
+    }
+    if key == `R {  ; Rotate
+        ship.Horizontal != ship.Horizontal
+        ScreenDirty := TRUE
+        if ship.Horizontal == FALSE {
+            ship.Y -= Over10By(ship.Y, ship.Size)
+        }
+        if ship.Horizontal <> FALSE {
+            ship.X -= Over10By(ship.X, ship.Size)
+        }
+        ->
+    }
+}
+
+
+let InputPlayersTurn = sub -> [done: bool] {
+    var [
+        key: byte @ A
+    ]
+    done := FALSE
+    key := ReadKey()
+    if key == ESCAPE {
+        EXIT()
+        ->
+    }
+    if key == SPACE {
+        ->
+    }
+    if key == LEFT {
+        if PCursor.H > 1 {
+            PCursor.H -= 1
+            ScreenDirty := TRUE
+        }
+        ->
+    }
+    if key == RIGHT {
+        if PCursor.H < 10 {
+            PCursor.H += 1
+            ScreenDirty := TRUE
+        }
+        ->
+    }
+    if key == UP {
+        if PCursor.V > 1 {
+            PCursor.V -= 1
+            ScreenDirty := TRUE
+        }
+        ->
+    }
+    if key == DOWN {
+        if PCursor.V < 10 {
+            PCursor.V += 1
+            ScreenDirty := TRUE
+        }
+        ->
+    }
+    if key == RETURN {
+        var [
+            hit: FireResult
+        ]
+        hit := Fire(EShips, PCursor, PTries)
+        if hit == FireHit {
+            PHits += 1
+        }
+        if hit <> FireTried {
+            done := TRUE
+        }
+        ->
+    }
+    if key == `` {
+        ; Reveals the enemy ships
+        HOME()
+        DrawGrid()
+        DrawShips(EShips)
+        CROUT()
+        Print("Hits=")
+        PRBYTE(PHits)
+        ReadKey()
+        ScreenDirty := TRUE
+        ->
+    }
+    if key == `0 {
+        PCursor.H := 10
+        ScreenDirty := TRUE
+        ->
+    }
+    if key >= `1 {
+        ;if key <= `9 {
+        if `: > key {
+            key -= `0
+            PCursor.H := key
+            ScreenDirty := TRUE
+            ->
+        }
+    }
+    key &= %11011111  ; toupper
+    if key >= `A {
+        ;if key <= `K {
+        if `L > key {
+            key -= `@ ; "A"-1
+            PCursor.V := key
+            ScreenDirty := TRUE
+            ->
+        }
+    }
+    ; TODO: why do I need this conditional for things not to crash when I press
+    ; some other random key?
+    if key <> ESCAPE {
+        ->
+    }
+}
+
+
+let Notify = sub <- [txt: text @ PTR] {
+    SetCursor(row=22, col=1)
+    Print(txt)
+}
+
+
+let NumPiecesInRow = sub <- [row: byte^ @ PTR] -> [cnt: int] {
+    cnt := 0
+    var [
+        i: int
+    ]
+    i := 0
+    while i < 10 {
+        if row_i <> SPACE {
+            cnt += 1
+        }
+        i += 1
+    }
+}
+
+
+let Over10By = sub <- [base: int, added: int] -> [over: int] {
+    base += added
+    if base <= 10 {
+        over := 0
+        ->
+    }
+    base -= 10
+    over := base
+}
+
+
+let Play = sub {
+    var [
+        enemysTurn: bool
+        hit       : bool
+    ]
+    if ScreenDirty <> 0 {
+        HOME()
+        PrintTurnInstructions()
+        DrawGrid()
+        DrawTries(PTries)
+        DrawCursor()
+        ScreenDirty := FALSE
+    }
+    enemysTurn := InputPlayersTurn()
+    if enemysTurn <> FALSE {
+        DrawTries(PTries)
+        DrawCursor()
+        if PHits == cHitsMax {
+            Victory()
+            ->
+        }
+        ReadKey()
+        PlayEnemy()
+    }
+    Play()
+}
+
+let PlayEnemy = sub {
+    var [
+        hit: FireResult
+    ]
+    HOME()
+    DrawGrid()
+    hit := FireTried
+    while hit == FireTried {
+        RNDL += RNDH
+        RNDL += 1
+        ECursor.H := Random1to10()
+        ECursor.V := Random1to10()
+        hit := Fire(Ships, ECursor, ETries)
+    }
+    PrintWaitInstructions()
+    DrawTries(ETries)
+    SetCursor(col=ECursor.H, row=ECursor.V)
+    if hit == FireHit {
+        EHits += 1
+    }
+    if EHits == cHitsMax {
+        Defeat()
+        ->
+    }
+}
+
+
+; Print writes the ASCII txt to the screen.
+let Print = sub <- [txt: text @ PTR] {
+    var [
+        i: int @ Y
+    ]
+    i := 0
+    while txt_i <> 0 {
+        COUT(txt_i)
+        i += 1
+    }
+}
+
+
+let PrintAddress = sub <- [subr: byte^ @ $FC] {
+    var [
+        addr: byte^2 @ $FC
+    ]
+    PRBYTE(addr_1)
+    PRBYTE(addr_0)
+}
+
+
+let PrintSetupInstructions = sub {
+    WNDLFT := 15
+    SetCursor(col=1, row=1)
+    Print("PLACE YOUR SHIPS")
+    CROUT()
+    CROUT()
+    Print("ARROWS - MOVE")
+    CROUT()
+    Print("   TAB - SWITCH")
+    CROUT()
+    Print("     R - ROTATE")
+    CROUT()
+    Print("RETURN - DONE")
+    CROUT()
+    Print("   ESC - QUIT")
+    CROUT()
+    WNDLFT := 0
+    SetCursor(col=0, row=0)
+}
+
+
+let PrintTurnInstructions = sub {
+    WNDLFT := 15
+    SetCursor(col=1, row=1)
+    Print("   ")
+    INVERSE()
+    Print("YOUR TURN")
+    NORMAL()
+    CROUT()
+    CROUT()
+    Print("ARROWS - AIM")
+    CROUT()
+    Print("RETURN - FIRE")
+    CROUT()
+    Print("   A-J - ROW")
+    CROUT()
+    Print("   1-9 - COLUMN")
+    CROUT()
+    Print("     0 - COLUMN 10")
+    CROUT()
+    Print("   ESC - QUIT")
+    CROUT()
+    WNDLFT := 0
+    SetCursor(col=0, row=0)
+}
+
+
+let PrintWaitInstructions = sub {
+    WNDLFT := 15
+    SetCursor(col=1, row=1)
+    Print("  THEIR TURN")
+    CROUT()
+    CROUT()
+    Print("PRESS ANY KEY")
+    CROUT()
+    Print(" TO CONTINUE")
+    CROUT()
+    WNDLFT := 0
+    SetCursor(col=0, row=0)
+}
+
+
+let Random1to10 = sub -> [val: int] {
+    val := RNDL
+    while val > 9 {
+        val -= 9
+    }
+    val += 1
+}
+
+
+; ReadKey waits for keyboard input and returns the key pressed.
+let ReadKey = sub -> [key: byte @ A] {
+    RDKEY()
+}
+
+; Redraws the screen if ScreenDirty is set.
+let Redraw = sub {
+    if ScreenDirty <> 0 {
+        HOME()
+        DrawGrid()
+        DrawShips(Ships)
+        PrintSetupInstructions()
+        ScreenDirty := FALSE
+    }
+}
+
+let Setup = sub {
+    var [
+        ready: bool
+    ]
+    ready := FALSE
+    while ready == FALSE {
+        Redraw()
+        ready := Input()
+    }
+    SetupEnemy()
+}
+
+
+let SetupEnemy = sub {
+    var [
+        position: int
+        initPos: InitPos^ @ SRC
+        ship: Ship^ @ DST
+        i: int
+    ]
+    position := Random
+    position &= %00000011  ; Only 4 choices
+    initPos := EINITPOS_0
+    while position > 0 {
+        initPos += 15  ; sizeof InitPos (3) times ships (5)
+        position -= 1
+    }
+    ship := EShips_0
+    i := 0
+    while i < cShipsCnt {
+        ship.X := initPos.X
+        ship.Y := initPos.Y
+        ship.Horizontal := initPos.Horizontal
+        i += 1
+        ship += cShipSize
+        initPos += 3  ; sizeof InitPos
+    }
+}
+
+
+let TryPlay = sub -> [valid: bool] {
+    var [
+        cnt: int
+    ]
+    cnt := NumPiecesInRow(ROWA)
+    cnt += NumPiecesInRow(ROWB)
+    cnt += NumPiecesInRow(ROWC)
+    cnt += NumPiecesInRow(ROWD)
+    cnt += NumPiecesInRow(ROWE)
+    cnt += NumPiecesInRow(ROWF)
+    cnt += NumPiecesInRow(ROWG)
+    cnt += NumPiecesInRow(ROWH)
+    cnt += NumPiecesInRow(ROWI)
+    cnt += NumPiecesInRow(ROWJ)
+    ; The expected number of ship pieces is 17 (=5+4+3+3+2)
+    if cnt == 17 {
+        valid := TRUE
+        ->
+    }
+    valid := FALSE
+}
+
+
+let ToLocation = sub <- [screen: Position] -> [loc: byte] {
+    loc := screen.V
+    loc -= 1
+    loc := Multiply(loc, 10)
+    loc += screen.H
+    loc -= 1
+}
+
+
+let Victory = sub {
+    Notify("VICTORY! YOU WON!")
+    ReadKey()
+    EXIT()
+}
+
+let WaitKey = sub {
+    while KYBD < $80 {
+    }
+    STROBE := A
+}
+
+
+; Program entry point
+let main = sub {
+    INIT()
+    HOME()
+
+    var [
+        key: byte
+    ]
+
+    SetCursorCol(15)
+    Print("WARSHIPS")
+    WaitKey()
+
+    CROUT()
+    SetCursorCol(11)
+    Print("A GAME FOR ROONA")
+    CROUT()
+    CROUT()
+    Print("HAPPY BIRTHDAY, ")
+    Flashing("ROONA")
+    Print("!")
+    CROUT()
+    Print("LOVE, UNCLE NIGEL")
+    CROUT()
+
+    SetCursorRow(22)
+    Print("COPYRIGHT (C) 2020-2022 TAEBER RAPCZAK")
+    CROUT()
+    Print("A2 VERSION 2022.06.25")
+
+    WaitKey()
+
+    ScreenDirty := TRUE
+
+    ; Initialize ships and tries
+    Copy(Ships, DEFSHIPS, 30)
+    Fill(PTries, SPACE, 100)
+    Copy(EShips, DEFSHIPS, 30)
+    Fill(ETries, SPACE, 100)
+    PHits := 0
+    EHits := 0
+
+    CurrentShip := Ships_0
+
+    Setup()
+    ScreenDirty := TRUE
+    PCursor.H := 1
+    PCursor.V := 1
+    Play()
+}
+
+asm {
+DEFSHIPS	DFB 0,0,0,5,$B5,5
+	DFB 1,0,0,4,$B4,4
+	DFB 2,0,0,3,$B3,3
+	DFB 3,0,0,3,$C4,3
+	DFB 4,0,$FF,2,$B2,2
+* 4 POSSIBLE ENEMY STARTING POSITIONS
+* EINITPOS [4]pos
+* sizeof(EINITPOS[0])== 3*5 = 15
+EINITPOS	DFB 5,5,1
+	DFB 7,6,0
+	DFB 1,4,0
+	DFB 7,1,0
+	DFB 5,0,0
+*
+	DFB 2,2,1
+	DFB 5,5,1
+	DFB 6,8,1
+	DFB 7,0,1
+	DFB 1,1,1
+*
+	DFB 2,4,1
+	DFB 2,5,0
+	DFB 6,5,0
+	DFB 9,0,0
+	DFB 9,3,0
+*
+	DFB 0,2,0
+	DFB 2,9,1
+	DFB 9,6,0
+	DFB 3,0,1
+	DFB 9,2,0
+}
+
+; vim: set invlist colorcolumn=80:
