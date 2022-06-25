@@ -255,6 +255,7 @@ use [
     Input           : sub -> [ready: bool]
     InputPlayersTurn: sub -> [done: bool]
     ReadKey         : sub -> [key: byte @ A]
+    WaitKey         : sub
 
     Redraw    : sub
     DrawShip  : sub <- [ship: Ship^ @ PTR]
@@ -760,7 +761,6 @@ let PlayEnemy = sub {
         Defeat()
         ->
     }
-    ;ReadKey()
 }
 
 
@@ -859,11 +859,7 @@ let Random1to10 = sub -> [val: int] {
 
 ; ReadKey waits for keyboard input and returns the key pressed.
 let ReadKey = sub -> [key: byte @ A] {
-    ;Random += 1
     RDKEY()
-    ;while KYBD < $80 {
-    ;}
-    ;STROBE := key
 }
 
 ; Redraws the screen if ScreenDirty is set.
@@ -955,6 +951,12 @@ let Victory = sub {
     EXIT()
 }
 
+let WaitKey = sub {
+    while KYBD < $80 {
+    }
+    STROBE := A
+}
+
 
 ; Program entry point
 let main = sub {
@@ -967,7 +969,7 @@ let main = sub {
 
     SetCursorCol(15)
     Print("WARSHIPS")
-    ;ReadKey()
+    WaitKey()
 
     CROUT()
     SetCursorCol(11)
@@ -984,9 +986,9 @@ let main = sub {
     SetCursorRow(22)
     Print("COPYRIGHT (C) 2020-2022 TAEBER RAPCZAK")
     CROUT()
-    Print("A2 VERSION 0.2.0 2022-06-25")
+    Print("A2 VERSION 2022.06.25")
 
-    ;ReadKey()
+    WaitKey()
 
     ScreenDirty := TRUE
 
