@@ -40,10 +40,12 @@ use [
 
 ; Apple II Zero Page variables
 var [
-    WNDLFT: byte @ $20  ; Left margin
-    WNDBTM: byte @ $23  ; Bottom margin
-    CH    : byte @ $24  ; Cursor's horizontal position
-    CV    : byte @ $25  ; Cursor's vertical position
+    WNDLFT : byte @ $20  ; Left column of scroll window
+    WNDWDTH: byte @ $21  ; Right column of scroll window
+    WNDTOP : byte @ $22  ; Top row of scroll window
+    WNDBTM : byte @ $23  ; Bottom row of scroll window
+    CH     : byte @ $24  ; Cursor's horizontal position
+    CV     : byte @ $25  ; Cursor's vertical position
 ]
 
 use [
@@ -97,8 +99,12 @@ let (
 ; Pointers
 var [
     PTR: word @ $06
+
     DST: word @ $06
     SRC: word @ $08
+
+    PTR1: word @ $FC
+    PTR2: word @ $FE
 ]
 
 ; Screen position
@@ -196,8 +202,27 @@ let (
     cEInitPosSize = 20   ; 20 = 4pos * 5ships
 )
 
+let (
+    cHitsMax = 17   ; 17 = 5+4+3+3+2
+)
+
+let (
+    FireResult = :int
+    FireMissed = 0
+    FireHit    = 1
+    FireTried  = 2
+)
 use [
-    DEFSHIPS  : Ship^cShipsCnt
+    Fire: sub <- [ship: Ship^ @ PTR1, pos: Position, tries: byte^ @ PTR2]
+              -> [hit: FireResult]
+    FireAt    : sub <- [ship: Ship^ @ SRC, screen: Position] -> [hit: bool]
+    ToLocation: sub <- [screen: Position] -> [loc: byte]
+    ; Picks random .H and .V values between and including 1 and 10.
+    Random1to10: sub -> [val: int]
+]
+
+use [
+    DEFSHIPS: Ship^cShipsCnt
     EINITPOS: InitPos^cEInitPosSize
 ]
 
@@ -213,7 +238,11 @@ var [
     PTries: byte^100
     ETries: byte^100
 
+    PHits: int
+    EHits: int
+
     PCursor: Position
+    ECursor: Position
 ]
 
 use [
@@ -224,19 +253,15 @@ use [
     Notify  : sub <- [txt: text @ PTR]
 
     Input           : sub -> [ready: bool]
-    InputPlayersTurn: sub
+    InputPlayersTurn: sub -> [done: bool]
     ReadKey         : sub -> [key: byte @ A]
 
     Redraw    : sub
     DrawShip  : sub <- [ship: Ship^ @ PTR]
     DrawShips : sub <- [ship: Ship^ @ PTR]
     DrawGrid  : sub
-    DrawTries : sub
+    DrawTries : sub <- [tries: byte^ @ PTR]
     DrawCursor: sub
-
-    Fire      : sub <- [ship: Ship^ @ PTR]
-    FireAt    : sub <- [ship: Ship^ @ SRC, screen: Position] -> [hit: bool]
-    ToLocation: sub <- [screen: Position] -> [loc: byte]
 
     Over10By      : sub <- [base: int, added: int] -> [over: int]
     NumPiecesInRow: sub <- [row: byte^ @ PTR] -> [cnt: int]
@@ -247,11 +272,22 @@ use [
 
     PrintSetupInstructions: sub
     PrintTurnInstructions : sub
+    PrintWaitInstructions : sub
 
-    Play: sub
+    Play     : sub
+    PlayEnemy: sub
+    Victory  : sub
+    Defeat   : sub
 
     main: sub
 ]
+
+
+let Defeat = sub {
+    Notify("DEFEAT! YOU LOST!")
+    ReadKey()
+    EXIT()
+}
 
 
 let DrawCursor = sub {
@@ -260,31 +296,13 @@ let DrawCursor = sub {
 
 
 let DrawGrid = sub {
-    X := 0
-asm {
-* PrCols prints the column names starting from X
-PrCols	LDA PrColsD,X
-	BEQ PrRows
-	STA LINE1,X
-	INX
-	JMP PrCols
-PrColsD	ASC " 12345678910"
-*PrColsD	ASC " 0123456789"
-	HEX 00
-
-* PrRows prints the row names.
-PrRows	LDX #0
-PrRows1	LDA PrRowsD,X
-	BEQ PrRows2
-	JSR COUT
-	JSR CROUT
-	INX
-	JMP PrRows1
-PrRowsD	ASC " ABCDEFGHIJ"
-*PrRowsD	ASC " 0123456789"
-	HEX 00
-PrRows2	RTS
-}
+    SetCursor(row=0, col=1)
+    Print("12345678910")
+    SetCursor(row=1, col=0)
+    WNDWDTH := WNDLFT
+    WNDWDTH += 1
+    Print("ABCDEFGHIJ")
+    WNDWDTH := 40
 }
 
 
@@ -344,7 +362,7 @@ let DrawShips = sub <- [ship: Ship^ @ PTR] {
 }
 
 
-let DrawTries = sub {
+let DrawTries = sub <- [tries: byte^ @ PTR] {
     var [
         x  : int
         y  : int
@@ -364,7 +382,7 @@ let DrawTries = sub {
             TABV()
         }
 
-        try := PTries_x
+        try := tries_x
         if try == 0 {
             try := SPACE
         }
@@ -384,40 +402,53 @@ let Flashing = sub <- [txt: text @ PTR] {
 }
 
 
-let Fire = sub <- [ship: Ship^ @ PTR] {
+let Fire = sub
+    <- [
+        ship : Ship^ @ PTR1
+        pos  : Position
+        tries: byte^ @ PTR2
+    ]
+    -> [
+        hit: FireResult
+    ]
+{
     var [
         loc : int
         val : char
         i   : int
-        hit : bool
+        shipHit: bool
     ]
 
-    loc := ToLocation(PCursor)
-    val := PTries_loc
+    hit := FireMissed
+
+    loc := ToLocation(pos)
+    val := tries_loc
     if val <> SPACE {
         ; Already tried
+        hit := FireTried
         ->
     }
 
     i := 0
     while i < cShipsCnt {
-        hit := FireAt(ship, PCursor)
-        if hit <> FALSE {
-            PTries_loc := `X
+        shipHit := FireAt(ship, pos)
+        if shipHit <> FALSE {
+            hit := FireHit
+            tries_loc := `X
             ship.Remaining -= 1
             if ship.Remaining == 0 {
-                Notify("Sank!")
+                Notify("SANK!")
                 ->
             }
-            Notify("Hit!")
+            Notify("HIT!")
             ->
         }
         ship += cShipSize
         i += 1
     }
 
-    PTries_loc := `-
-    Notify("Miss!")
+    tries_loc := `-
+    Notify("MISS!")
 }
 
 
@@ -574,10 +605,11 @@ let Input = sub -> [ready: bool] {
 }
 
 
-let InputPlayersTurn = sub {
+let InputPlayersTurn = sub -> [done: bool] {
     var [
         key: byte @ A
     ]
+    done := FALSE
     key := ReadKey()
     if key == ESCAPE {
         EXIT()
@@ -612,7 +644,29 @@ let InputPlayersTurn = sub {
         ->
     }
     if key == RETURN {
-        Fire(EShips)
+        var [
+            hit: FireResult
+        ]
+        hit := Fire(EShips, PCursor, PTries)
+        if hit == FireHit {
+            PHits += 1
+        }
+        if hit <> FireTried {
+            done := TRUE
+        }
+        ->
+    }
+    if key == `` {
+        ; Reveals the enemy ships
+        HOME()
+        DrawGrid()
+        DrawShips(EShips)
+        Notify("CHEATER")
+        CROUT()
+        Print("PHits=")
+        PRBYTE(PHits)
+        ReadKey()
+        ScreenDirty := TRUE
         ->
     }
     ; TODO: why do I need this conditional for things not to crash when I press
@@ -656,18 +710,57 @@ let Over10By = sub <- [base: int, added: int] -> [over: int] {
 
 
 let Play = sub {
+    var [
+        enemysTurn: bool
+        hit       : bool
+    ]
     if ScreenDirty <> 0 {
         HOME()
         PrintTurnInstructions()
         DrawGrid()
-        ; TODO: remove next line
-            DrawShips(EShips)
-        DrawTries()
+        DrawTries(PTries)
         DrawCursor()
         ScreenDirty := FALSE
     }
-    InputPlayersTurn()
+    enemysTurn := InputPlayersTurn()
+    if enemysTurn <> FALSE {
+        DrawTries(PTries)
+        DrawCursor()
+        if PHits == cHitsMax {
+            Victory()
+            ->
+        }
+        ReadKey()
+        PlayEnemy()
+    }
     Play()
+}
+
+let PlayEnemy = sub {
+    var [
+        hit: FireResult
+    ]
+    HOME()
+    DrawGrid()
+    hit := FireTried
+    while hit == FireTried {
+        RNDL += RNDH
+        RNDL += 1
+        ECursor.H := Random1to10()
+        ECursor.V := Random1to10()
+        hit := Fire(Ships, ECursor, ETries)
+    }
+    PrintWaitInstructions()
+    DrawTries(ETries)
+    SetCursor(col=ECursor.H, row=ECursor.V)
+    if hit == FireHit {
+        EHits += 1
+    }
+    if EHits == cHitsMax {
+        Defeat()
+        ->
+    }
+    ;ReadKey()
 }
 
 
@@ -740,6 +833,30 @@ let PrintTurnInstructions = sub {
 }
 
 
+let PrintWaitInstructions = sub {
+    WNDLFT := 15
+    SetCursor(col=1, row=1)
+    Print("  THEIR TURN")
+    CROUT()
+    CROUT()
+    Print("PRESS ANY KEY")
+    CROUT()
+    Print(" TO CONTINUE")
+    CROUT()
+    WNDLFT := 0
+    SetCursor(col=0, row=0)
+}
+
+
+let Random1to10 = sub -> [val: int] {
+    val := RNDL
+    while val > 9 {
+        val -= 9
+    }
+    val += 1
+}
+
+
 ; ReadKey waits for keyboard input and returns the key pressed.
 let ReadKey = sub -> [key: byte @ A] {
     ;Random += 1
@@ -770,11 +887,6 @@ let Setup = sub {
         ready := Input()
     }
     SetupEnemy()
-    ; TODO: remove this debugging section
-    HOME()
-    DrawGrid()
-    DrawShips(EShips)
-    ReadKey()
 }
 
 
@@ -837,6 +949,13 @@ let ToLocation = sub <- [screen: Position] -> [loc: byte] {
 }
 
 
+let Victory = sub {
+    Notify("VICTORY! YOU WON!")
+    ReadKey()
+    EXIT()
+}
+
+
 ; Program entry point
 let main = sub {
     INIT()
@@ -865,7 +984,7 @@ let main = sub {
     SetCursorRow(22)
     Print("COPYRIGHT (C) 2020-2022 TAEBER RAPCZAK")
     CROUT()
-    Print("VERSION 0.2.0 2022-05-03")
+    Print("A2 VERSION 0.2.0 2022-06-25")
 
     ;ReadKey()
 
@@ -876,6 +995,8 @@ let main = sub {
     Fill(PTries, SPACE, 100)
     Copy(EShips, DEFSHIPS, 30)
     Fill(ETries, SPACE, 100)
+    PHits := 0
+    EHits := 0
 
     CurrentShip := Ships_0
 
