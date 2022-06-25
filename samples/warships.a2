@@ -16,8 +16,6 @@ asm {
 ; Apple II monitor subroutines
 use [
     EXIT : sub @ $3D0
-    MONZ : sub @ $FF69
-    BREAK: sub @ $FA4C
 
     INIT: sub @ $FB2F
     HOME: sub @ $FC58
@@ -300,8 +298,7 @@ let DrawGrid = sub {
     SetCursor(row=0, col=1)
     Print("12345678910")
     SetCursor(row=1, col=0)
-    WNDWDTH := WNDLFT
-    WNDWDTH += 1
+    WNDWDTH := 1
     Print("ABCDEFGHIJ")
     WNDWDTH := 40
 }
@@ -510,12 +507,12 @@ let Input = sub -> [ready: bool] {
         EXIT()
         ->
     }
-    if key == SPACE {
+    if key == RETURN {
         ready := TryPlay()
         ->
     }
-    if key == RETURN {
-        MONZ()
+    if key == SPACE {
+        ready := TryPlay()
         ->
     }
     if key == LEFT {
@@ -586,23 +583,6 @@ let Input = sub -> [ready: bool] {
         }
         ->
     }
-; TODO figure out what's wrong after this...
-->
-    if key == `0 {
-        ->
-    }
-    if key >= `1 {
-        ;if key <= `9 {
-        if `: > key {
-        }
-        ->
-    }
-    if key >= `A {
-        ;if key <= `K {
-        if `L > key {
-        }
-        ->
-    }
 }
 
 
@@ -614,6 +594,9 @@ let InputPlayersTurn = sub -> [done: bool] {
     key := ReadKey()
     if key == ESCAPE {
         EXIT()
+        ->
+    }
+    if key == SPACE {
         ->
     }
     if key == LEFT {
@@ -662,13 +645,36 @@ let InputPlayersTurn = sub -> [done: bool] {
         HOME()
         DrawGrid()
         DrawShips(EShips)
-        Notify("CHEATER")
         CROUT()
-        Print("PHits=")
+        Print("Hits=")
         PRBYTE(PHits)
         ReadKey()
         ScreenDirty := TRUE
         ->
+    }
+    if key == `0 {
+        PCursor.H := 10
+        ScreenDirty := TRUE
+        ->
+    }
+    if key >= `1 {
+        ;if key <= `9 {
+        if `: > key {
+            key -= `0
+            PCursor.H := key
+            ScreenDirty := TRUE
+            ->
+        }
+    }
+    key &= %11011111  ; toupper
+    if key >= `A {
+        ;if key <= `K {
+        if `L > key {
+            key -= `@ ; "A"-1
+            PCursor.V := key
+            ScreenDirty := TRUE
+            ->
+        }
     }
     ; TODO: why do I need this conditional for things not to crash when I press
     ; some other random key?
@@ -798,7 +804,7 @@ let PrintSetupInstructions = sub {
     CROUT()
     Print("     R - ROTATE")
     CROUT()
-    Print(" SPACE - DONE")
+    Print("RETURN - DONE")
     CROUT()
     Print("   ESC - QUIT")
     CROUT()
