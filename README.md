@@ -8,7 +8,7 @@ It is more higher-level than 6502 assembly, but not as high-level as C.
 _Copyright © 2022 Taeber Rapczak \<taeber@rapczak.com>_.
 _License: [MIT](LICENSE)_.
 
-Here's a sample:
+Here's a [sample](samples/hello.a2):
 
 ```swift
 ; hello.a2 (without comments)
@@ -42,8 +42,8 @@ let main = sub {
 }
 ```
 
-Until more [samples](samples/hello.a2) are added, check out the [test
-cases](tests/) being used to test the compiler.
+Check out the [samples](samples/) as well as the [test
+cases](tests/) being used to verify the correctness of the compiler.
 
 _(The [grammar](grammar.peg) is written in [PEG][], if you're into that kind of
 thing. And if you *are* into that kind of thing, check out my
