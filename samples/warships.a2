@@ -145,7 +145,7 @@ let Copy = sub <- [dst: byte^ @ DST, src: byte^ @ SRC, size: word] {
 
 let Fill = sub <- [dst: byte^ @ DST, val: byte, size: word] {
     var [
-        i: int
+        i: word
     ]
     i := 0
     while i < size {
