@@ -404,7 +404,13 @@ static void storeByte(const struct Operand *dst)
         STA(stringf("%s,Y", dst->base));
         return;
     case MODE_INDIRECT_OFFSET:
-        LDY(stringf("%s", dst->offset));
+        if (dst->offset[0] == '@') {
+            require(dst->offset[1] == 'Y' && dst->offset[2] == '\0',
+                "only Y can be used as the offset register: got %s",
+                &dst->offset[1]);
+        } else {
+            LDY(stringf("%s", dst->offset));
+        }
         STA(stringf("(%s),Y", dst->base));
         return;
     case MODE_REGISTER:
@@ -465,11 +471,12 @@ static void mathByte(const struct Operand *src, MathOp MATH)
 
     case MODE_INDIRECT_OFFSET:
         if (src->offset[0] == '@') {
-            require(src->offset[1] == 'Y',
+            require(src->offset[1] == 'Y' && src->offset[2] == '\0',
                 "only Y can be used as the offset register: got %s",
                 &src->offset[1]);
+        } else {
+            LDY(stringf("%s", src->offset));
         }
-        LDY(stringf("%s", src->offset));
         MATH(stringf("(%s),Y", src->base));
         return;
 
