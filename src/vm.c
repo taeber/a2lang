@@ -51,7 +51,11 @@ static void ontick(void)
         fflush(stdout);
         break;
     case RDKEY:
-        a = getchar() | 0x80;
+        a = getchar();
+        if (feof(stdin)) {
+            a = 0x04; // ASCII for "End of Transmission"
+        }
+        a |= 0x80;
         break;
     case HOME:
         system("clear");
