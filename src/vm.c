@@ -1,5 +1,7 @@
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 // https://raw.githubusercontent.com/datajerk/c2t/f5840bdab08c323dd3593758510b9acca8173b44/fake6502.h
 #include "fake6502.h"
@@ -72,22 +74,56 @@ static void ontick(void)
     mem[pc] = RTS;
 }
 
+static void usage(FILE *out, const char *exepath)
+{
+    fprintf(out, "usage: %s [flags] binfile\n", exepath);
+    fprintf(out, "  --help     displays this message\n");
+    fprintf(out, "  --quiet    prevents output to stderr (default)\n");
+    fprintf(out, "  --verbose  writes out the CPU status every cycle\n");
+}
+
 int main(int argc, char *argv[argc])
 {
     if (argc == 0)
         return 42;
 
     if (argc < 2) {
-        fprintf(stderr, "usage: %s binfile\n", argv[0]);
+        usage(stderr, argv[0]);
         return 2;
     }
 
-    if (argc > 2) {
-        // assume --quiet
+    const char *filename = "";
+    bool        verbose  = false;
+
+    for (int i = 1; i < argc; i++) {
+        bool helpWanted = strcmp("-h", argv[i]) == 0
+            || strcmp("--help", argv[i]) == 0
+            || strcmp("/?", argv[i]) == 0;
+        if (helpWanted) {
+            usage(stdout, argv[0]);
+            return 0;
+        }
+        if (strcmp("--verbose", argv[i]) == 0) {
+            verbose = true;
+            continue;
+        }
+        if (strcmp("--quiet", argv[i]) == 0) {
+            verbose = false;
+            continue;
+        }
+        if (argv[i][0] == '-') {
+            fprintf(stderr, "error: unknown flag: %s\n", argv[i]);
+            usage(stderr, argv[0]);
+            return 2;
+        }
+        filename = argv[i];
+    }
+
+    if (!verbose) {
         freopen("/dev/null", "wb", stderr);
     }
 
-    FILE *binfile = fopen(argv[1], "rb");
+    FILE *binfile = fopen(filename, "rb");
     if (!binfile) {
         perror("fopen");
         return 1;
