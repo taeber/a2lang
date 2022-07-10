@@ -119,8 +119,17 @@ function run
     popd >/dev/null
 }
 
+function vm
+{
+    if [ "$1" != "" ]
+    then
+        AOUT="$1"
+    fi
+    ./vm "$AOUT"
+}
+
 case "$1" in
-bash|build|clean|compile|run)
+bash|build|clean|compile|run|vm)
     $*
     ;;
 
@@ -133,12 +142,13 @@ help|*)
     echo ""
     echo "The commands are:"
     echo ""
+    echo "    help     view this help message"
     echo "    bash     adds bash tab completion for a2"
     echo "    build    compile and assemble A2 into 6502 binary"
-    echo "    compile  compile A2 into 6502 assembly"
     echo "    clean    delete build files and dependencies"
-    echo "    help     view this help message"
+    echo "    compile  compile A2 into 6502 assembly"
     echo "    run      run a 6502 binary in an emulator"
+    echo "    vm       run a 6502 binary from your console"
     echo ""
     echo "For Bash, you can add an a2 alias with tab completion with:"
     echo ""

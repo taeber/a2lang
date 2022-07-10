@@ -21,16 +21,16 @@ src/text.o: src/text.h src/text.c
 src/fake6502.h:
 	curl -L https://raw.githubusercontent.com/datajerk/c2t/f5840bdab08c323dd3593758510b9acca8173b44/fake6502.h >$@
 
-tester: src/tester.c src/fake6502.h
+vm: src/vm.c src/fake6502.h
 	$(CC) $(CFLAGS) $(PWD)/$< $(LDFLAGS) -o $@ $(LDLIBS)
 
 .PHONY: tests
-tests: debug tester
+tests: debug vm
 	tests/compile-all.bash
 
 .PHONY: clean
 clean:
-	rm -f compile tester src/*.o src/fake6502.h
+	rm -f compile vm src/*.o src/fake6502.h
 	rm -rf ./*.dSYM
 
 .PHONY: rebuild

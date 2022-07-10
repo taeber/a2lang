@@ -27,14 +27,14 @@ do
     fi
 done
 
-if [ -f ../tester ]
+if [ -f ../vm ]
 then
     pushd ..
     echo Running some tests using fake6502
     for each in `grep --files-with-matches FAIL tests/*.a2`
     do
         ./a2 build "$each" 2>&1 >/dev/null
-        ./tester OUT.6502 --quiet | grep --quiet FAIL
+        ./vm OUT.6502 --quiet | grep --quiet FAIL
         if [ $? -eq 0 ]
         then
             echo " ❌  $each"
