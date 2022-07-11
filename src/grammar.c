@@ -228,7 +228,7 @@ const char *Call(const char *text, struct Call *outCall)
 const char *CharLiteral(const char *text, char *outChar)
 {
     if (text[0] == '`') {
-        if (text[1] >= '!' && text[1] <= '~') {
+        if (text[1] >= ' ' && text[1] <= '~') {
             *outChar = text[1];
             return Whitespace(text + 2);
         }

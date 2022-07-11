@@ -73,7 +73,7 @@ Binary      <- '%' [01]+ _
 TextLiteral <- '"' Character* '"' _
 Character   <- '\\' [\"\\nrt]
              / (!["\\] [ -~])
-CharLiteral <- '`' [!-~] _
+CharLiteral <- '`' [ -~] _
 
 Subscript   <- '_' _ Numerical
 FieldAccess <- '.' _ Identifier
