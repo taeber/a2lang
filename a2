@@ -59,7 +59,7 @@ function deps
     if [ ! -d deps/a2asm.git ]
     then
         mkdir -p deps/a2asm.git
-        git clone https://github.com/taeber/a2asm deps/a2asm.git
+        git clone --depth=1 https://github.com/taeber/a2asm deps/a2asm.git
         pushd deps/a2asm.git
         go build -o ../a2asm cmd/a2asm/main.go
         popd
@@ -70,9 +70,21 @@ function deps
         curl -L 'https://github.com/AppleWin/AppleWin/raw/master/bin/MASTER.DSK' >deps/MASTER.DSK
     fi
 
-    if [ ! -f deps/ac.jar ]
+    if java -version 2>/dev/null
     then
-        curl -L 'https://github.com/AppleCommander/AppleCommander/releases/download/v1-5-0/AppleCommander-ac-1.5.0.jar' >deps/ac.jar
+        if [ ! -f deps/ac.jar ]
+        then
+            curl -L 'https://github.com/AppleCommander/AppleCommander/releases/download/v1-5-0/AppleCommander-ac-1.5.0.jar' >deps/ac.jar
+        fi
+    else
+        if [ ! -d deps/dos33fsprogs.git ]
+        then
+            git clone --depth=1 https://github.com/deater/dos33fsprogs deps/dos33fsprogs.git
+            pushd deps/dos33fsprogs.git/utils/dos33fs-utils
+            make dos33
+            cp dos33 ../../../
+            popd
+        fi
     fi
 }
 
@@ -95,7 +107,12 @@ function run
 
     mkdir -p build
     cp deps/MASTER.DSK "$DISK"
-    java -jar deps/ac.jar -dos "$DISK" PROG B <$AOUT
+    if [ -f deps/dos33 ]
+    then
+        deps/dos33 "$DISK" save b "$AOUT" PROG
+    else
+        java -jar deps/ac.jar -dos "$DISK" PROG B <$AOUT
+    fi
 
     echo ""
     echo "Your build disk is at:"
