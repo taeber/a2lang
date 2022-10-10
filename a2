@@ -56,13 +56,29 @@ function compile
 
 function deps
 {
-    if [ ! -d deps/a2asm.git ]
+    if [ ! -f deps/a2asm ]
     then
-        mkdir -p deps/a2asm.git
-        git clone --depth=1 https://github.com/taeber/a2asm deps/a2asm.git
-        pushd deps/a2asm.git
-        go build -o ../a2asm cmd/a2asm/main.go
-        popd
+        case "$OSTYPE" in
+            darwin*)
+                curl -L 'https://github.com/taeber/a2asm/releases/download/20220502/a2asm.mac' >deps/a2asm
+                chmod +x deps/a2asm
+                ;;
+            linux*)
+                curl -L 'https://github.com/taeber/a2asm/releases/download/20220502/a2asm.lin' >deps/a2asm
+                chmod +x deps/a2asm
+                ;;
+            *)
+                # Try to build it from source
+                if [ ! -d deps/a2asm.git ]
+                then
+                    mkdir -p deps/a2asm.git
+                    git clone --depth=1 https://github.com/taeber/a2asm deps/a2asm.git
+                    pushd deps/a2asm.git
+                    go build -o ../a2asm cmd/a2asm/main.go
+                    popd
+                fi
+                ;;
+        esac
     fi
 
     if [ ! -f deps/MASTER.DSK ]
