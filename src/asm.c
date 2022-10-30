@@ -67,7 +67,7 @@ static struct Instruction *code = &codeHead;
 
 static char unusedLabel[256] = { 0 };
 
-static struct Instruction dataHead;
+static struct Instruction  dataHead;
 static struct Instruction *data = &dataHead;
 
 static struct Instruction *Instruction(
@@ -112,11 +112,24 @@ static void freeInstruction(struct Instruction *instruction)
     instruction->next = NULL;
 }
 
-static void removeNextInstruction(struct Instruction *instruction)
+// Remove instructions from range (pred, last].
+static void removeRange(struct Instruction *instruction, struct Instruction *last)
 {
     struct Instruction *removed = instruction->next;
     instruction->next           = removed->next;
+    if (removed != last) {
+        removeRange(instruction, last);
+    }
     freeInstruction(removed);
+}
+
+// Returns the next instruction that is not a comment.
+static struct Instruction *successor(struct Instruction *instr)
+{
+    if (instr)
+        for (instr = instr->next; instr && instr->comment; instr = instr->next)
+            ;
+    return instr;
 }
 
 static void addCode(const char *label, const char *op, char *operand)
@@ -130,6 +143,31 @@ static void addCode(const char *label, const char *op, char *operand)
         EQU(label, strcopy(unusedLabel));
     }
     unusedLabel[0] = '\0';
+}
+
+static bool changesAccumulator(Operation op)
+{
+    if (op == OP_ADC)
+        return true;
+    else if (op == OP_AND)
+        return true;
+    else if (op == OP_ASL)
+        return true;
+    else if (op == OP_EOR)
+        return true;
+    else if (op == OP_LDA)
+        return true;
+    else if (op == OP_ORA)
+        return true;
+    else if (op == OP_PLA)
+        return true;
+    else if (op == OP_SBC)
+        return true;
+    else if (op == OP_TXA)
+        return true;
+    else if (op == OP_TYA)
+        return true;
+    return false;
 }
 
 void ADC(char *operand) { addCode(NULL, OP_ADC, operand); }
@@ -187,21 +225,21 @@ void Optimize(void)
     // optimization; rather, it's required for proper execution of the code.
     if (unusedLabel[0] != '\0') {
         code = code->next = Instruction(unusedLabel, OP_NOP, NULL, NULL, NULL);
-        unusedLabel[0] = '\0';
+        unusedLabel[0]    = '\0';
     }
 
     struct Instruction *pred = NULL, *curr = NULL, *succ = NULL;
 
     curr = codeHead.next;
     while (curr) {
-        succ = curr->next;
+        succ = successor(curr);
 
         if (succ) {
             // JSR + RTS => JMP
             if (curr->op == OP_JSR && succ->op == OP_RTS) {
                 if (!*succ->label) {
-                    curr->op   = OP_JMP;
-                    removeNextInstruction(curr);
+                    curr->op = OP_JMP;
+                    removeRange(curr, succ);
                     succ = curr->next;
                     goto next;
                 }
@@ -220,7 +258,7 @@ void Optimize(void)
                 if (*succ->label) {
                     //    RTS  => L2 RTS
                     // L2 RTS
-                    removeNextInstruction(pred);
+                    removeRange(pred, curr);
                     curr = succ;
                 } else {
                     // L1 RTS  => L1 RTS
@@ -228,14 +266,31 @@ void Optimize(void)
                     // or
                     //    RTS  =>    RTS
                     //    RTS
-                    removeNextInstruction(curr);
+                    removeRange(curr, succ);
+                    succ = NULL;
                 }
                 // Repeat the check in case there's another RTS
                 continue;
             }
-        }
 
-next:
+            // LDA same + STA ? + LDA same => LDA same + STA ?
+            // LDX same + STX ? + LDX same => LDX same + STX ?
+            // LDY same + STY ? + LDY same => LDY same + STY ?
+            if ((curr->op == OP_LDA && !changesAccumulator(succ->op)) || (curr->op == OP_LDX && succ->op == OP_STX) || (curr->op == OP_LDY && succ->op == OP_STY)) {
+                struct Instruction *succsucc = successor(succ);
+                if (succsucc && succsucc->op == curr->op) {
+                    if (!*succ->label && !*succsucc->label) {
+                        // The ST and second LD involved MUST NOT be labelled.
+                        if (strncmp(curr->operand, succsucc->operand, sizeof(curr->operand)) == 0) {
+                            removeRange(succ, succsucc);
+                            succsucc = NULL;
+                        }
+                    }
+                    goto next;
+                }
+            }
+        }
+    next:
         pred = curr;
         curr = succ;
     }
