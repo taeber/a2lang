@@ -1,13 +1,21 @@
 .POSIX:
 .SUFFIXES:
-CC	    = cc
-CFLAGS  = -Wall -Wextra -Wpedantic -std=c17
+CC	    = clang
+CFLAGS  = -Wall -Wextra -Wpedantic -std=c17 -D_XOPEN_SOURCE \
+		  -Wconversion -Wdouble-promotion \
+		  -Wno-unused-parameter \
+		  -fsanitize=address,undefined -fsanitize-trap \
+		  -g3
 
 debug:
-	make -j4 CFLAGS='$(CFLAGS) -g' compile
+	make -j4 compile
+
+release:
+	make -j4 CFLAGS='-std=c17 -D_XOPEN_SOURCE -O3' compile
+
 
 compile: src/main.o src/asm.o src/codegen.o src/grammar.o src/io.o src/parser.o src/symbols.o src/text.o
-	$(CC) $(LDFLAGS) -o $@ $^ $(LDLIBS)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
 src/main.o: src/main.c
 src/asm.o: src/asm.h src/asm.c src/asm-op.c
