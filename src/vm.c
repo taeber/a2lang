@@ -14,6 +14,8 @@ const static uint16_t EXIT   = 0x03D0,
                       CROUT  = 0xFD8E,
                       PRBYTE = 0xFDDA;
 
+const static uint16_t SYSTEM = 0x03F5;  // Ampersand (&) Command Vector (JMP)
+
 const static uint8_t RTS = 0x60;
 
 static uint8_t mem[0xffff];
@@ -68,6 +70,21 @@ static void ontick(void)
         printf("%02X", a);
         fflush(stdout);
         break;
+    case SYSTEM: {
+        uint8_t  addr[2] = { x, a };
+        uint8_t *loc     = mem + u16le(addr);
+        char cmd[256] = { 0 };
+        for (size_t i = 0; i < sizeof cmd; i++) {
+            cmd[i] = loc[i] & 0x7f;
+            if (cmd[i] == 0)
+                break;
+        }
+        int error = system(cmd);
+        a = (error >> 8);
+        fflush(stdout);
+        fprintf(stderr, "system(\"%s\") $%06X => %d\n", cmd, u16le(addr), error);
+        break;
+    }
     default:
         return;
     }
