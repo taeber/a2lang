@@ -1,0 +1,192 @@
+; native.a2
+
+; Acts as a shell for a native OS.
+; Use with the Fake 6502 VM.
+;   ./a2 build samples/native.a2 && ./a2 vm
+
+; Inline 6502 assembly is supported within an asm-block.
+asm {
+	ORG $800
+	JSR main
+	JMP $3D0
+}
+
+; Add type information to builtin, Apple II ROM subroutines.
+use [
+    ; COUT, the Character Output routine, prints out ch.
+    COUT : sub <- [ch: char @ A] @ $FDED
+    ; CROUT prints a carriage return.
+    CROUT: sub @ $FD8E
+    ; RDKEY reads a key from into A
+    RDKEY: sub -> [key: byte @ A]  @ $FD0C
+
+    PRBYTE: sub <- [byte: byte @ A] @ $FDDA
+    EXIT: sub @ $3D0
+
+    System: sub <- [cmd: word @ AX] -> [err: byte @ A] @ $03F5
+]
+
+let (
+    ESCH = $84  ; High-ASCII Escape Character (Ctrl+[)
+    EOTH = $84  ; Ctrl-D (End of Transmission)
+    LFH  = $8A  ; Line feed
+    CRH  = $8D  ; Carriage return
+    SPCH = $A0  ; Space
+
+    INBUFF = $0200  ; Input buffer
+    AMPERV = $03F5  ; Ampersand (&) Command Vector (JMP)
+)
+
+; End of platform code ;
+;;;;;;;;;;;;;;;;;;;;;;;;
+; Start of application ;
+
+; Ptr will be used as a pointer, so it must live in Zero Page.
+var [
+    Ptr: word @ $06
+    Dst: word @ Ptr
+    Src: word @ $08
+
+    Buf: char^255 @ INBUFF
+]
+
+use Exit: sub @ EXIT
+
+let PutChar = sub <- [ch: char @ A] {
+    if ch == CRH {
+        CROUT()
+        ->
+    }
+    COUT(ch)
+}
+
+use GetChar: sub -> [ch: byte @ A] @ RDKEY
+
+let Print = sub <- [txt: text @ Ptr] {
+    var i: int @ Y
+    i := 0
+    while txt_i <> 0 {
+        PutChar(txt_i)
+        i += 1
+    }
+}
+
+let Println = sub <- [txt: text @ Ptr] {
+    Print(txt)
+    PutChar(CRH)
+}
+
+let TextEquals = sub <- [txta: text @ Dst, txtb: text @ Src] -> [equal: byte] {
+    var i: int
+    i := 0
+    while 1 == 1 {
+        if txta_i <> txtb_i {
+            equal := 0
+            ->
+        }
+        if txta_i == 0 {
+            stop
+        }
+        if txtb_i == 0 {
+            stop
+        }
+        i += 1
+    }
+    equal := 1
+}
+
+let TextHasPrefix = sub <- [txt: text @ Dst, prefix: text @ Src] -> [eq: byte] {
+    eq := 1
+
+    var i: int
+    i := 0
+    while prefix_i <> 0 {
+        if txt_i <> prefix_i {
+            eq := 0
+            ->
+        }
+        i += 1
+    }
+}
+
+let Process = sub {
+    var same: byte
+
+    same := TextEquals(Buf, "exit")
+    if same == 1 {
+        Exit()
+        ->
+    }
+    same := TextHasPrefix(Buf, "echo")
+    if same == 1 {
+        Println(Buf_5)  ; len("echo ") == 5
+        ->
+    }
+    same := TextHasPrefix(Buf, "help")
+    if same == 1 {
+        Println("Commands:")
+        Println("  exit   quits the shell")
+        Println("  echo   writes out arguments")
+        Println("  help   lists commands")
+        Println("  run    runs a command on the native OS")
+        ->
+    }
+
+    var x: text @ Ptr
+    x := Buf_0
+
+    same := TextHasPrefix(Buf, "run")
+    if same == 1 {
+        x := Buf_4
+    }
+
+    var err: byte
+    err := System(x)
+    if err == 127 {
+        Println("?")
+        ->
+    }
+    if err <> 0 {
+        PRBYTE(err)
+        Println("!")
+        ->
+    }
+}
+
+let Prompt = sub -> [done: byte] {
+    Print("$ ")
+
+    var i: int
+    i := 0
+
+    var ch: char
+    ch := 0
+    while ch <> EOTH {
+        ch := GetChar()
+        if ch == CRH {
+            Buf_i := 0
+            Process()
+            done := 0
+            ->
+        }
+        if ch == LFH {
+            Buf_i := 0
+            Process()
+            done := 0
+            ->
+        }
+        Buf_i := ch
+        i += 1
+    }
+    done := 1
+}
+
+let main = sub {
+    var done: byte
+    done := 0
+    while done <> 1 {
+        done := Prompt()
+    }
+    Println("")
+}
+
