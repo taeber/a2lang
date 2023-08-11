@@ -464,6 +464,7 @@ void generateConditional(const struct Conditional *cond, bool isLoop)
         [COMP_LESSEQUAL]    = IFLE,
         [COMP_GREATER]      = IFGT,
         [COMP_GREATEREQUAL] = IFGE,
+        [COMP_ALWAYS]       = IFTT,
     };
 
     char *lblLoop = UnusedLabel();

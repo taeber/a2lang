@@ -19,8 +19,8 @@ let CR = $8D
 
 key := CR
 
-while 0 == 0 {
-    while 1 <> 0 {
+loop {
+    loop if 1 <> 0 {
         key := RDKEY()
         if key == `A {
             repeat

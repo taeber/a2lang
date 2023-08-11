@@ -29,7 +29,7 @@ var PTR: word @ $06
 let Println = sub <- [txt: text @ PTR] {
     var i: int @ Y
     i := 0
-    while txt_i <> 0 {
+    loop if txt_i <> 0 {
         COUT(txt_i)
         i  += 1
     }
@@ -111,12 +111,11 @@ let [
 
 ## Control Flow
 
-A2 provides conditional checks (`if`) and looping (`while`), but only one
-kind for each.
-There are **no** `for`-loops, `do`-loops, `else`, or `switch`
-statements.
-Inspiration was taken from Go when considering what not to include
-in the language.
+A2 provides conditional checks (`if`) and looping (`loop`), but only one kind
+for each.
+There are **no** `for`-loops, `do`-loops, `else`, or `switch` statements.
+Inspiration was taken from Go when considering what not to include in the
+language.
 Comparisons always require two arguments and, with the exception of `<>` for
 *not equals*, are operators are C-like.
 

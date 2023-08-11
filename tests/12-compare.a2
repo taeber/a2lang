@@ -19,7 +19,7 @@ var PTR: addr @ $06
 let Println = sub <- [msg: text @ PTR] {
     var i: int @ Y
 	i := 0
-    while msg_i <> 0 {
+    loop if msg_i <> 0 {
         COUT(msg_i)
         i += 1
     }

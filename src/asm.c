@@ -29,7 +29,9 @@ static Operation OP_ADC = "ADC",
                  OP_BCS = "BCS",
                  OP_BEQ = "BEQ",
                  OP_BNE = "BNE",
+                 OP_BVC = "BVC",
                  OP_CLC = "CLC",
+                 OP_CLV = "CLV",
                  OP_CMP = "CMP",
                  OP_CPX = "CPX",
                  OP_CPY = "CPY",
@@ -148,7 +150,9 @@ void BCC(char *operand) { addCode(NULL, OP_BCC, operand); }
 void BCS(char *operand) { addCode(NULL, OP_BCS, operand); }
 void BEQ(char *operand) { addCode(NULL, OP_BEQ, operand); }
 void BNE(char *operand) { addCode(NULL, OP_BNE, operand); }
+void BVC(char *operand) { addCode(NULL, OP_BVC, operand); }
 void CLC(void) { addCode(NULL, OP_CLC, NULL); }
+void CLV(void) { addCode(NULL, OP_CLV, NULL); }
 void CMP(char *operand) { addCode(NULL, OP_CMP, operand); }
 void CPX(char *operand) { addCode(NULL, OP_CPX, operand); }
 void CPY(char *operand) { addCode(NULL, OP_CPY, operand); }

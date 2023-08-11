@@ -83,7 +83,8 @@ Assign      <- [:+\-&|^!] '=' _
 
 Conditional <- "if" &Space _ Comparison Block
 
-Loop        <- "while" &Space _ Comparison Block
+Loop        <- "loop" &Space Conditional
+             / "loop" &Space _ Block
 
 Return      <- "->" _
 Stop        <- "stop"   &Space _

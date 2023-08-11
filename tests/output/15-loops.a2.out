@@ -10,11 +10,9 @@ CR	EQU $8D
 * COPYBB key #CR
 	LDA #CR
 	STA key
-* IFEQ #$00 #$00
-*   A2_1 A2_2
-A2_0	LDA #$00
-	BEQ A2_1
-	JMP A2_2
+* BRA A2_1
+A2_0	CLV
+	BVC A2_1
 * IFNE #$01 #$00
 *   A2_3 A2_4
 A2_1	LDA #$01

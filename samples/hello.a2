@@ -28,9 +28,9 @@ var PTR: word @ $06
 let Println = sub <- [txt: text @ PTR] {
     var i: int @ Y
     i := 0
-    while txt_i <> 0 {
+    loop if txt_i <> 0 {
         COUT(txt_i)
-        i  += 1
+        i += 1
     }
     CROUT()
 }

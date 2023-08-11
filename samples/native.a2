@@ -65,7 +65,7 @@ use GetChar: sub -> [ch: byte @ A] @ RDKEY
 let Print = sub <- [txt: text @ Ptr] {
     var i: int @ Y
     i := 0
-    while txt_i <> 0 {
+    loop if txt_i <> 0 {
         PutChar(txt_i)
         i += 1
     }
@@ -79,7 +79,7 @@ let Println = sub <- [txt: text @ Ptr] {
 let TextEquals = sub <- [txta: text @ Dst, txtb: text @ Src] -> [equal: byte] {
     var i: int
     i := 0
-    while 1 == 1 {
+    loop {
         if txta_i <> txtb_i {
             equal := 0
             ->
@@ -100,7 +100,7 @@ let TextHasPrefix = sub <- [txt: text @ Dst, prefix: text @ Src] -> [eq: byte] {
 
     var i: int
     i := 0
-    while prefix_i <> 0 {
+    loop if prefix_i <> 0 {
         if txt_i <> prefix_i {
             eq := 0
             ->
@@ -161,7 +161,7 @@ let Prompt = sub -> [done: byte] {
 
     var ch: char
     ch := 0
-    while ch <> EOTH {
+    loop if ch <> EOTH {
         ch := GetChar()
         if ch == CRH {
             Buf_i := 0
@@ -184,7 +184,7 @@ let Prompt = sub -> [done: byte] {
 let main = sub {
     var done: byte
     done := 0
-    while done <> 1 {
+    loop if done <> 1 {
         done := Prompt()
     }
     Println("")

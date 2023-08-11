@@ -411,11 +411,22 @@ const char *Location(const char *text, struct Numerical *outNum)
 
 const char *Loop(const char *text, struct Conditional *outCond)
 {
-    if ((text = consumeToken(text, "while", true))) {
-        if ((text = Comparison(text, outCond))) {
-            outCond->_text = text;
-            return Block(text, &outCond->then);
+    const char *remaining;
+    if ((text = consumeToken(text, "loop", true))) {
+        if ((remaining = Conditional(text, outCond))) {
+            return remaining;
         }
+        if ((remaining = Block(text, &outCond->then))) {
+            // loop {...} ~= loop if 1 <> 0 {...}
+            outCond->left.type = VAL_NUMBER;
+            outCond->left.Number = 0;
+            outCond->compare = COMP_ALWAYS;
+            outCond->right.type = VAL_NUMBER;
+            outCond->right.Number = 0;
+            outCond->_text = remaining;
+            return remaining;
+        }
+        possibleBadText = text;
     }
     return NoParse;
 }

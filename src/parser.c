@@ -156,11 +156,13 @@ static void printParameters(struct Parameters *params, const char *prefix, unsig
 
 static void printConditional(struct Conditional *cond, unsigned indent, const char *type)
 {
-    const char *ops[] = { "==", "<>", "<", "<=", ">", ">=" };
+    const char *ops[] = { "==", "<>", "<", "<=", ">", ">=", "Forever" };
     output(indent, "%s line=%d\n", type, line(cond->_text));
     output(indent + 1, "%s\n", ops[cond->compare]);
-    printValue(&cond->left, indent + 2);
-    printValue(&cond->right, indent + 2);
+    if (cond->compare != COMP_ALWAYS) {
+        printValue(&cond->left, indent + 2);
+        printValue(&cond->right, indent + 2);
+    }
     output(indent + 1, "%s\n", "Then");
     printBlock(&cond->then, indent + 2);
 }
@@ -209,7 +211,7 @@ static void printBlock(struct Block *block, unsigned indent)
             printConditional(&s->Conditional, indent, "If");
             break;
         case STMT_LOOP:
-            printConditional(&s->Conditional, indent, "While");
+            printConditional(&s->Conditional, indent, "Loop");
             break;
         case STMT_RETURN:
             output(indent, "%s\n", "Return");

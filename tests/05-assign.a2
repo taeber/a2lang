@@ -44,10 +44,10 @@ let NUMPEEPS = 10
 
 var i: int
 i := 0
-while i < NUMPEEPS {
+loop if i < NUMPEEPS {
     i += 1
 }
-while i > 0 {
+loop if i > 0 {
     i -= NUMPEEPS
 }
 

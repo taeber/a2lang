@@ -136,7 +136,7 @@ let Copy = sub <- [dst: byte^ @ DST, src: byte^ @ SRC, size: word] {
         i: int
     ]
     i := 0
-    while i < size {
+    loop if i < size {
         dst_i := src_i
         i += 1
     }
@@ -148,7 +148,7 @@ let Fill = sub <- [dst: byte^ @ DST, val: byte, size: word] {
         i: word
     ]
     i := 0
-    while i < size {
+    loop if i < size {
         dst_i := val
         i += 1
     }
@@ -157,7 +157,7 @@ let Fill = sub <- [dst: byte^ @ DST, val: byte, size: word] {
 
 let Multiply = sub <- [multiplier: byte, multiplicand: byte] -> [product: byte] {
     product := 0
-    while multiplier > 0 {
+    loop if multiplier > 0 {
         product += multiplicand
         multiplier -= 1
     }
@@ -316,7 +316,7 @@ let DrawShip = sub <- [ship: Ship^ @ PTR] {
         i: int
     ]
     i := 0
-    while i < ship.Size {
+    loop if i < ship.Size {
         COUT(ship.Graphic)
         if ship.Horizontal == 0 {
             CH -= 1
@@ -341,7 +341,7 @@ let DrawShips = sub <- [ship: Ship^ @ PTR] {
     curr := FALSE
 
     i := 0
-    while i < cShipsCnt {
+    loop if i < cShipsCnt {
         if ship == CurrentShip {
             curr := TRUE
         }
@@ -371,7 +371,7 @@ let DrawTries = sub <- [tries: byte^ @ PTR] {
 
     x := 0
     y := 0
-    while x < 100 {
+    loop if x < 100 {
         if y == 10 {
             y := 0
 
@@ -428,7 +428,7 @@ let Fire = sub
     }
 
     i := 0
-    while i < cShipsCnt {
+    loop if i < cShipsCnt {
         shipHit := FireAt(ship, pos)
         if shipHit <> FALSE {
             hit := FireHit
@@ -696,7 +696,7 @@ let NumPiecesInRow = sub <- [row: byte^ @ PTR] -> [cnt: int] {
         i: int
     ]
     i := 0
-    while i < 10 {
+    loop if i < 10 {
         if row_i <> SPACE {
             cnt += 1
         }
@@ -750,7 +750,7 @@ let PlayEnemy = sub {
     HOME()
     DrawGrid()
     hit := FireTried
-    while hit == FireTried {
+    loop if hit == FireTried {
         RNDL += RNDH
         RNDL += 1
         ECursor.H := Random1to10()
@@ -776,7 +776,7 @@ let Print = sub <- [txt: text @ PTR] {
         i: int @ Y
     ]
     i := 0
-    while txt_i <> 0 {
+    loop if txt_i <> 0 {
         COUT(txt_i)
         i += 1
     }
@@ -856,7 +856,7 @@ let PrintWaitInstructions = sub {
 
 let Random1to10 = sub -> [val: int] {
     val := RNDL
-    while val > 9 {
+    loop if val > 9 {
         val -= 9
     }
     val += 1
@@ -884,7 +884,7 @@ let Setup = sub {
         ready: bool
     ]
     ready := FALSE
-    while ready == FALSE {
+    loop if ready == FALSE {
         Redraw()
         ready := Input()
     }
@@ -902,13 +902,13 @@ let SetupEnemy = sub {
     position := Random
     position &= %00000011  ; Only 4 choices
     initPos := EINITPOS_0
-    while position > 0 {
+    loop if position > 0 {
         initPos += 15  ; sizeof InitPos (3) times ships (5)
         position -= 1
     }
     ship := EShips_0
     i := 0
-    while i < cShipsCnt {
+    loop if i < cShipsCnt {
         ship.X := initPos.X
         ship.Y := initPos.Y
         ship.Horizontal := initPos.Horizontal
@@ -958,7 +958,7 @@ let Victory = sub {
 }
 
 let WaitKey = sub {
-    while KYBD < $80 {
+    loop if KYBD < $80 {
     }
     STROBE := A
 }

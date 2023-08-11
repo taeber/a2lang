@@ -14,6 +14,7 @@ void BEQ(char *label);
 void BNE(char *label);
 void BCC(char *label);
 void BCS(char *label);
+void BVC(char *label);
 
 typedef void (*Compare)(char *);
 void CMP(char *operand);
@@ -23,6 +24,7 @@ void CPY(char *operand);
 void ADC(char *operand);
 void SBC(char *operand);
 void CLC(void);
+void CLV(void);
 void SEC(void);
 
 void AND(char *operand);
@@ -121,6 +123,8 @@ void IFLE(const struct Operand *left, const struct Operand *right, const char *t
 void IFGE(const struct Operand *left, const struct Operand *right, const char *then, const char *done);
 // left > right
 void IFGT(const struct Operand *left, const struct Operand *right, const char *then, const char *done);
+// true
+void IFTT(const struct Operand *left, const struct Operand *right, const char *then, const char *done);
 
 // pointer := src
 void ADDR(const char *pointer, const struct Operand *src);

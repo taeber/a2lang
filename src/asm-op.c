@@ -1137,6 +1137,13 @@ void IFNE(const struct Operand *left, const struct Operand *right, const char *t
     }
 }
 
+void IFTT(const struct Operand *_left, const struct Operand *_right, const char *then, const char *_done) {
+    // TODO: Check for 65c02 and use BRA.
+    REM(stringf("BRA %s", then));
+    CLV();
+    BVC(strcopy(then));
+}
+
 void LESS(const struct Operand *dst, const struct Operand *src) { mathMacro(&subtract, dst, dst, src); }
 void NOT(const struct Operand *dst, const struct Operand *src) { mathMacro(&bitwiseXor, dst, src, &ONES); }
 

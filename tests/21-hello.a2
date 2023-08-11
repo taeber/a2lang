@@ -20,7 +20,7 @@ let Println = sub <- [txt: text @ $06] {
     ]
 
     i := 0
-    while txt_i <> 0 {
+    loop if txt_i <> 0 {
         COUT(txt_i)
         i  += 1
     }

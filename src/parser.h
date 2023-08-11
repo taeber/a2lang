@@ -155,6 +155,7 @@ enum Compare {
     COMP_LESSEQUAL,
     COMP_GREATER,
     COMP_GREATEREQUAL,
+    COMP_ALWAYS,
 };
 
 struct Conditional {
