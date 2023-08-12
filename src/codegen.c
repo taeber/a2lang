@@ -162,7 +162,7 @@ static struct Operand *reduceSimpleValue(const struct Value *value)
         fatalf("%s: expected a simple value type; got %d", __func__, value->type);
 
     case VAL_UNKNOWN:
-        break;
+        return NULL;
     }
     fatalf("%s: unhandled value type: %d", __func__, value->type);
 }
@@ -455,6 +455,15 @@ void generateCall(const struct Call *call)
     JSR(string(subname));
 }
 
+static void alwaysBranch(const struct Operand *_left,
+    const struct Operand *_right, const char *then, const char *_done)
+{
+    // TODO: Check for 65c02 and use BRA.
+    REM(stringf("BRA %s", then));
+    CLV();
+    BVC(strcopy(then));
+}
+
 void generateConditional(const struct Conditional *cond, bool isLoop)
 {
     static const COND IFxx[] = {
@@ -464,7 +473,7 @@ void generateConditional(const struct Conditional *cond, bool isLoop)
         [COMP_LESSEQUAL]    = IFLE,
         [COMP_GREATER]      = IFGT,
         [COMP_GREATEREQUAL] = IFGE,
-        [COMP_ALWAYS]       = IFTT,
+        [COMP_ALWAYS]       = alwaysBranch,
     };
 
     char *lblLoop = UnusedLabel();
