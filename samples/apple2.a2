@@ -1,0 +1,296 @@
+; apple2.a2 - Complete Apple II ROM Header
+; Claude.ai created from https://www.6502disassembly.com/a2-rom/APPLE2.ROM.html
+
+; ============================================================================
+; Monitor ROM Routines - Input/Output
+; ============================================================================
+
+use [
+    ; Character Output - prints character in A register
+    COUT : sub <- [ch: char @ A] @ $FDED
+    COUT1: sub <- [ch: char @ A] @ $FDF0
+
+    ; Carriage Return Output
+    CROUT: sub @ $FD8E
+    CROUT1: sub @ $FD8B
+
+    ; Character Input
+    RDKEY: sub -> [key: char @ A] @ $FD0C   ; Read key with cursor flash
+    RDCHAR: sub -> [key: char @ A] @ $FD35  ; Read char with escape processing
+    KEYIN: sub -> [key: char @ A] @ $FD1B   ; Key input routine
+    KEYIN2: sub -> [key: char @ A] @ $FD21
+
+    ; Line Input
+    GETLN: sub @ $FD6A     ; Get line input
+    GETLN0: sub @ $FD6C
+    GETLNZ: sub @ $FD67
+
+    ; Bell/Speaker
+    BELL: sub @ $FF3A      ; System bell
+    BELL1: sub @ $FBD9
+    BELL2: sub @ $FBE4
+
+    ; Print Routines
+    PRBYTE: sub <- [val: byte @ A] @ $FDDA  ; Print byte as hex
+    PRHEX: sub <- [val: byte @ A] @ $FDE3   ; Print hex digit
+    PRNTAX: sub <- [val: word @ AX] @ $F941 ; Print word as hex
+    PRNTYX: sub <- [val: word @ YX] @ $F940 ; Print Y,X as hex
+    PRNTX: sub <- [val: byte @ X] @ $F944   ; Print X as hex
+]
+
+; ============================================================================
+; Monitor ROM Routines - Screen Control
+; ============================================================================
+
+use [
+    ; Screen Control
+    HOME: sub @ $FC58      ; Clear screen and home cursor
+    INIT: sub @ $FB2F      ; Initialize text screen
+
+    ; Video Mode Control
+    NORMAL: sub @ $F273    ; Set normal video
+    INVERSE: sub @ $F277   ; Set inverse video
+    FLASH: sub @ $F280     ; Set flashing video
+
+    ; Cursor Control
+    TABV: sub <- [row: byte @ A] @ $FB5B    ; Tab to vertical position
+    VTAB: sub <- [row: byte @ A] @ $F256    ; Vertical tab
+    VTABZ: sub @ $FC24     ; Vertical tab (zero page)
+    HTAB: sub <- [col: byte @ A] @ $F7E7    ; Horizontal tab
+
+    ; Screen Utilities
+    BASCALC: sub <- [row: byte @ A] @ $FBC1 ; Calculate line base address
+    CLREOL: sub @ $FC9C    ; Clear to end of line
+    CLREOP: sub @ $FC42    ; Clear to end of page
+    SCROLL: sub @ $FC70    ; Scroll screen up
+]
+
+; ============================================================================
+; Monitor ROM Routines - Memory and Debugging
+; ============================================================================
+
+use [
+    ; Memory Examination
+    XAM: sub @ $FDB3       ; Examine memory
+    XAM8: sub @ $FDA3      ; Examine 8 bytes
+    XAMPM: sub @ $FDC6     ; Examine with +/-
+
+    ; Monitor Entry Points
+    MON: sub @ $FF65       ; Monitor entry
+    REGDSP: sub @ $FAD7    ; Display registers
+
+    ; Tape I/O
+    WRTAPE: sub @ $FCE5    ; Write to tape
+    PREAD: sub @ $FB1E     ; Read from tape
+    PREAD2: sub @ $FB25
+    PREAD4: sub @ $FB21
+
+    ; Memory Test/Verify
+    VFY: sub @ $FE36       ; Verify memory
+    VFYOK: sub @ $FE58     ; Verify OK
+]
+
+; ============================================================================
+; Applesoft BASIC ROM Routines - Math Functions
+; ============================================================================
+
+use [
+    ; Floating Point Math
+    ABS: sub @ $EBAF       ; Absolute value
+    ADD: sub @ $FDD1       ; Addition
+    DIV: sub @ $EA5E       ; Division
+    LOG: sub @ $E941       ; Logarithm
+    EXP: sub @ $EFA0       ; Exponential
+    SQR: sub @ $EF09       ; Square root
+    SGN: sub @ $EB90       ; Sign function
+    INT: sub @ $E941       ; Integer function
+    ATN: sub @ $F09E       ; Arctangent
+    COS: sub @ $EFEA       ; Cosine
+    SIN: sub @ $F066       ; Sine
+    TAN: sub @ $F03A       ; Tangent
+    RND: sub -> [val: byte @ A] @ $E097  ; Random number
+
+    ; String Functions
+    ASC: sub @ $E6B6       ; ASCII value of character
+    CHRSTR: sub @ $E646    ; Character from ASCII (CHR$ function)
+    LEN: sub @ $E6D3       ; String length
+    LEFTSTR: sub @ $E65A   ; Left substring (LEFT$ function)
+    RIGHTSTR: sub @ $E686  ; Right substring (RIGHT$ function)
+    MIDSTR: sub @ $E691    ; Mid substring (MID$ function)
+    STR: sub @ $E9B4       ; Number to string
+    VAL: sub @ $E707       ; String to number
+]
+
+; ============================================================================
+; Applesoft BASIC ROM Routines - Program Control
+; ============================================================================
+
+use [
+    ; BASIC Program Control
+    END: sub @ $D870       ; END statement
+    STOP: sub @ $D86E      ; STOP statement
+    FOR: sub @ $D766       ; FOR loop
+    NEXT: sub @ $DCF9      ; NEXT statement
+    IF: sub @ $D8C4        ; IF statement
+    GOTO: sub @ $D93E      ; GOTO statement
+    GOSUB: sub @ $D921     ; GOSUB statement
+    RETURN: sub @ $D96A    ; RETURN statement
+    DATA: sub @ $D995      ; DATA statement
+    BASREAD: sub @ $DBE2   ; READ statement
+    RESTORE: sub @ $D81C   ; RESTORE statement
+
+    ; Variable Handling
+    DIM: sub @ $DFD9       ; DIM statement
+    LET: sub @ $D86B       ; LET assignment
+    INPUT: sub @ $DBB2     ; INPUT statement
+    PRINT: sub @ $DAD6     ; PRINT statement
+
+    ; Program Execution
+    RUN: sub @ $D912       ; RUN command
+    LIST: sub @ $D6A5      ; LIST command
+    NEW: sub @ $D649       ; NEW command
+    CLEARC: sub @ $D66C    ; Clear variables
+]
+
+; ============================================================================
+; Graphics ROM Routines
+; ============================================================================
+
+use [
+    ; Graphics Mode Control
+    GR: sub @ $F390        ; Set lo-res graphics
+    TEXT: sub @ $F399      ; Set text mode
+    HGR: sub @ $F3E2       ; Set hi-res graphics
+    HGR2: sub @ $F3D8      ; Set hi-res page 2
+
+    ; Graphics Drawing
+    BASPLOT: sub <- [x: byte @ A, y: byte @ Y] @ $F225   ; Plot lo-res point
+    HPLOT: sub @ $F6FE     ; Plot hi-res point
+    HCOLOR: sub <- [color: byte @ A] @ $F6E9  ; Set hi-res color
+    COLOR: sub <- [color: byte @ A] @ $F24F   ; Set lo-res color
+
+    ; Line Drawing
+    HLIN: sub @ $F232      ; Horizontal line
+    VLIN: sub @ $F241      ; Vertical line
+    DRAW: sub @ $F769      ; Draw shape
+    XDRAW: sub @ $F76F     ; XOR draw shape
+
+    ; Shape Table
+    ROT: sub @ $F721       ; Set rotation
+    SCALE: sub @ $F727     ; Set scale
+    SHLOAD: sub @ $F775    ; Load shape table
+]
+
+; ============================================================================
+; Hardware I/O Locations
+; ============================================================================
+
+var [
+    ; Keyboard
+    KBD: byte @ $C000      ; Keyboard data
+    KBDSTRB: byte @ $C010  ; Keyboard strobe
+
+    ; Speaker
+    SPKR: byte @ $C030     ; Speaker toggle
+
+    ; Graphics/Text mode switches
+    TXTCLR: byte @ $C050   ; Select graphics mode
+    TXTSET: byte @ $C051   ; Select text mode
+    MIXCLR: byte @ $C052   ; Full screen mode
+    MIXSET: byte @ $C053   ; Mixed graphics/text mode
+
+    ; Page switches
+    TXTPAGE1: byte @ $C054 ; Page 1
+    TXTPAGE2: byte @ $C055 ; Page 2
+
+    ; Graphics resolution switches
+    LORES: byte @ $C056    ; Lo-res graphics
+    HIRES: byte @ $C057    ; Hi-res graphics
+
+    ; Annunciator switches
+    AN0OFF: byte @ $C058   ; Annunciator 0 off
+    AN0ON: byte @ $C059    ; Annunciator 0 on
+    AN1OFF: byte @ $C05A   ; Annunciator 1 off
+    AN1ON: byte @ $C05B    ; Annunciator 1 on
+    AN2OFF: byte @ $C05C   ; Annunciator 2 off
+    AN2ON: byte @ $C05D    ; Annunciator 2 on
+    AN3OFF: byte @ $C05E   ; Annunciator 3 off
+    AN3ON: byte @ $C05F    ; Annunciator 3 on
+
+    ; Paddle/Joystick inputs
+    PADDL0: byte @ $C064   ; Paddle 0
+    PADDL1: byte @ $C065   ; Paddle 1
+    PADDL2: byte @ $C066   ; Paddle 2
+    PADDL3: byte @ $C067   ; Paddle 3
+    PB0: byte @ $C061      ; Pushbutton 0
+    PB1: byte @ $C062      ; Pushbutton 1
+    PB2: byte @ $C063      ; Pushbutton 2
+
+    ; Cassette tape
+    TAPEIN: byte @ $C060   ; Tape input
+
+    ; Slot ROM control
+    CLRROM: byte @ $CFFF   ; Disable slot ROM
+]
+
+; ============================================================================
+; Zero Page Variables
+; ============================================================================
+
+var [
+    ; Cursor position (used by ROM)
+    CH: byte @ $24         ; Cursor horizontal position
+    CV: byte @ $25         ; Cursor vertical position
+
+    ; Text window boundaries (used by ROM)
+    WNDLFT: byte @ $20     ; Left column of scroll window
+    WNDWDTH: byte @ $21    ; Width of scroll window
+    WNDTOP: byte @ $22     ; Top row of scroll window
+    WNDBTM: byte @ $23     ; Bottom row of scroll window
+
+    ; General purpose pointers
+    PTR: word @ $06        ; General pointer
+    SRC: word @ $08        ; Source pointer
+    DST: word @ $06        ; Destination pointer (same as PTR)
+
+    ; Monitor pointers
+    A1L: byte @ $3C        ; Address 1 low
+    A1H: byte @ $3D        ; Address 1 high
+    A2L: byte @ $3E        ; Address 2 low
+    A2H: byte @ $3F        ; Address 2 high
+    A3L: byte @ $40        ; Address 3 low
+    A3H: byte @ $41        ; Address 3 high
+
+    ; BASIC pointers
+    TXTTAB: word @ $67     ; Start of BASIC program
+    VARTAB: word @ $69     ; Start of variables
+    ARYTAB: word @ $6B     ; Start of arrays
+    STREND: word @ $6D     ; End of string storage
+    FRETOP: word @ $6F     ; Top of string storage
+    FRESPC: word @ $71     ; Free space pointer
+    MEMSIZ: word @ $73     ; Top of memory
+    CURLIN: word @ $75     ; Current line number
+]
+
+; ============================================================================
+; System Constants
+; ============================================================================
+
+; ============================================================================
+; System Subroutines
+; ============================================================================
+
+use [
+    ; DOS 3.3 entry points
+    EXIT: sub @ $3D0       ; Exit to DOS
+]
+
+; ============================================================================
+; System Constants
+; ============================================================================
+
+var [
+    ; ROM identification
+    DISKID: byte @ $FB02   ; Disk ID byte
+    VERSION: byte @ $FBB3  ; ROM version
+]
