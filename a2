@@ -65,9 +65,9 @@ function deps
         popd
     fi
 
-    if [ ! -f deps/MASTER.DSK ]
+    if [ ! -f deps/BLANK.DSK ]
     then
-        curl -L 'https://github.com/AppleWin/AppleWin/raw/master/bin/MASTER.DSK' >deps/MASTER.DSK
+        curl -L 'https://github.com/AppleWin/AppleWin/raw/master/bin/BLANK.DSK' >deps/BLANK.DSK
     fi
 
     if java -version 2>/dev/null
@@ -106,7 +106,7 @@ function run
     echo "    $AOUT"
 
     mkdir -p build
-    cp deps/MASTER.DSK "$DISK"
+    cp deps/BLANK.DSK "$DISK"
     if [ -f deps/dos33 ]
     then
         deps/dos33 "$DISK" save b "$AOUT" PROG
