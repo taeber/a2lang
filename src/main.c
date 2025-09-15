@@ -25,11 +25,12 @@ static void onexit(void)
 static void usage(void)
 {
     puts("Compile an A2 file into 6502 assembly\n");
-    puts("usage: compile [-h|--help] [-asm] [-ast] [-sym] file");
+    puts("usage: compile [-h|--help] [-asm] [-ast] [-sym] file|-");
     puts("   --help|-h  Display this help message");
     puts("   -asm       Write assembly to stderr");
     puts("   -ast       Show the parsed, Abstract Syntax Tree");
     puts("   -sym       Dump the Symbol Table");
+    puts("   file|-     Input file path or '-' to read from stdin");
 }
 
 int main(int argc, const char *argv[argc])
@@ -42,7 +43,7 @@ int main(int argc, const char *argv[argc])
     const char *path = NULL;
 
     for (int i = 1; i < argc; i++) {
-        if (argv[i][0] != '-') {
+        if (argv[i][0] != '-' || strcmp("-", argv[i]) == 0) {
             path = argv[i];
         } else if (strcmp("-ast", argv[i]) == 0) {
             writeAST = true;
@@ -67,11 +68,11 @@ int main(int argc, const char *argv[argc])
 
     atexit(onexit);
 
-    unsigned badLine = 0;
+    unsigned    badLine   = 0;
     const char *remaining = Parse(contents, &program, &badLine);
     if (remaining && remaining[0] != '\0') {
         const char *endofline = remaining;
-        while (*endofline != '\0' && *endofline != '\n' ) {
+        while (*endofline != '\0' && *endofline != '\n') {
             endofline++;
         }
         if (*endofline == '\n') {
