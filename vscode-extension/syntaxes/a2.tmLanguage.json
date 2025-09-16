@@ -1,0 +1,163 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "A2",
+  "scopeName": "source.a2",
+  "patterns": [
+    {
+      "include": "#comments"
+    },
+    {
+      "include": "#strings"
+    },
+    {
+      "include": "#characters"
+    },
+    {
+      "include": "#numbers"
+    },
+    {
+      "include": "#keywords"
+    },
+    {
+      "include": "#types"
+    },
+    {
+      "include": "#operators"
+    },
+    {
+      "include": "#punctuation"
+    },
+    {
+      "include": "#identifiers"
+    }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.semicolon.a2",
+          "match": ";.*$"
+        }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.a2",
+          "match": "\\b(use|var|let|sub|if|loop|stop|repeat|asm)\\b"
+        }
+      ]
+    },
+    "types": {
+      "patterns": [
+        {
+          "name": "storage.type.a2",
+          "match": "\\b(byte|char|word|int|text)\\b"
+        }
+      ]
+    },
+    "strings": {
+      "name": "string.quoted.double.a2",
+      "begin": "\"",
+      "end": "\"",
+      "patterns": [
+        {
+          "name": "constant.character.escape.a2",
+          "match": "\\\\[\"\\\\nrt]"
+        }
+      ]
+    },
+    "characters": {
+      "name": "constant.character.a2",
+      "match": "`[\\x20-\\x7E]"
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "name": "constant.numeric.hex.a2",
+          "match": "\\$[0-9a-fA-F]+"
+        },
+        {
+          "name": "constant.numeric.binary.a2",
+          "match": "%[01]+"
+        },
+        {
+          "name": "constant.numeric.decimal.a2",
+          "match": "-?[0-9]+"
+        }
+      ]
+    },
+    "operators": {
+      "patterns": [
+        {
+          "name": "keyword.operator.comparison.a2",
+          "match": "(==|<>|<=?|>=?)"
+        },
+        {
+          "name": "keyword.operator.assignment.a2",
+          "match": "([:+\\-&|^!]=?)"
+        },
+        {
+          "name": "keyword.operator.arrow.a2",
+          "match": "(->|<-)"
+        },
+        {
+          "name": "keyword.operator.pointer.a2",
+          "match": "\\^"
+        }
+      ]
+    },
+    "punctuation": {
+      "patterns": [
+        {
+          "name": "punctuation.section.block.begin.a2",
+          "match": "\\{"
+        },
+        {
+          "name": "punctuation.section.block.end.a2",
+          "match": "\\}"
+        },
+        {
+          "name": "punctuation.section.group.begin.a2",
+          "match": "\\["
+        },
+        {
+          "name": "punctuation.section.group.end.a2",
+          "match": "\\]"
+        },
+        {
+          "name": "punctuation.section.parens.begin.a2",
+          "match": "\\("
+        },
+        {
+          "name": "punctuation.section.parens.end.a2",
+          "match": "\\)"
+        },
+        {
+          "name": "punctuation.separator.comma.a2",
+          "match": ","
+        },
+        {
+          "name": "punctuation.accessor.dot.a2",
+          "match": "\\."
+        },
+        {
+          "name": "punctuation.separator.subscript.a2",
+          "match": "_"
+        },
+        {
+          "name": "punctuation.definition.location.a2",
+          "match": "@"
+        }
+      ]
+    },
+    "identifiers": {
+      "patterns": [
+        {
+          "name": "variable.name.a2",
+          "match": "\\b[a-zA-Z][a-zA-Z0-9]*\\b"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,36 @@
+; minimal.a2
+; .include "apple2.a2"
+
+; With the include-declarative above, the LSP will import symbols, but you still
+; need to concatenate the files for the compiler like:
+;
+; bash$ a2 compile <(cat apple2.a2 minimal.a2)
+
+
+asm {
+	ORG $800
+	JSR main
+}
+EXIT()
+
+; Println writes the NUL-terminated msg pointed at by PTR along with a CR.
+; Note: text is a builtin alias to char^.
+let Println = sub <- [txt: text @ PTR] {
+    var i: int @ Y
+    i := 0
+    loop if txt_i <> 0 {
+        COUT(txt_i)
+        i += 1
+    }
+    CROUT()
+}
+
+let MoveAintoX = sub <- [src: byte @ A] -> [dst: byte @ X] {
+    dst := src
+}
+
+let main = sub {
+    MoveAintoX($42)
+    CROUT()
+    Println("Hello, friends!")
+}

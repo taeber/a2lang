@@ -1,0 +1,31 @@
+{
+  "name": "a2-language-server",
+  "version": "0.1.0",
+  "description": "Language Server Protocol implementation for A2 language",
+  "homepage": "http://a2lang.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/a2lang/a2lang"
+  },
+  "bugs": {
+    "url": "https://github.com/a2lang/a2lang/issues"
+  },
+  "main": "out/server.js",
+  "scripts": {
+    "compile": "tsc -b",
+    "watch": "tsc -b -w",
+    "build": "npm run compile",
+    "start": "node out/server.js"
+  },
+  "dependencies": {
+    "vscode-languageserver": "^9.0.1",
+    "vscode-languageserver-textdocument": "^1.0.11"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
