@@ -5,7 +5,7 @@ A2 is a programming language targeting the MOS 6502 computer architecture of
 the Apple II.
 It is more higher-level than 6502 assembly, but not as high-level as C.
 
-_Copyright © 2022 Taeber Rapczak \<taeber@rapczak.com>_.
+_Copyright © 2022–2025 Taeber Rapczak \<taeber@rapczak.com>_.
 _License: [MIT](LICENSE)_.
 
 Here's a [sample](samples/hello.a2):
@@ -65,6 +65,14 @@ $ ./a2 run
 ```
 
 ![Screenshot of hello.a2 running in MAME](screenshot.png)
+
+## Editor Support
+
+In addition to the [VIM plugin](https://github.com/taeber/vim-a2) I wrote,
+Claude.ai was kind enough to generate both an [LSP server](lsp-server/) and a
+[VSCode Extension](vscode-extension/) for A2.
+
+![Screenshot of VSCode support for A2](vscode.png)
 
 ## Types
 
