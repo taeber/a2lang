@@ -1,0 +1,75 @@
+{
+  "name": "a2-language-support",
+  "displayName": "A2 Language Support",
+  "description": "Language support for A2 programming language",
+  "version": "0.1.0",
+  "publisher": "a2-language",
+  "icon": "a2logo.png",
+  "homepage": "http://a2lang.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/a2lang/a2lang"
+  },
+  "bugs": {
+    "url": "https://github.com/a2lang/a2lang/issues"
+  },
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "keywords": [
+    "a2",
+    "apple2",
+    "6502",
+    "assembly"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "a2",
+        "aliases": [
+          "A2",
+          "a2"
+        ],
+        "extensions": [
+          ".a2"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "a2",
+        "scopeName": "source.a2",
+        "path": "./syntaxes/a2.tmLanguage.json"
+      }
+    ],
+    "configuration": {
+      "type": "object",
+      "title": "A2 Language Server",
+      "properties": {
+        "a2LanguageServer.compilerPath": {
+          "type": "string",
+          "default": "./compile",
+          "description": "Path to the A2 compiler executable"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/node": "16.x",
+    "@types/vscode": "^1.74.0",
+    "typescript": "^4.9.4"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1"
+  }
+}
